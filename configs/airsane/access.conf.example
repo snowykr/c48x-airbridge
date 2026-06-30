@@ -1,0 +1,12 @@
+# AirSane access allow-list example for the active v1 native eSCL/AirScan path.
+# Copy to /etc/airsane/access.conf and point ACCESS_FILE at it from /etc/default/airsane if you need restriction.
+# Format follows AirSane upstream access-file handling.
+
+# localhost
+127.0.0.1/32
+::1/128
+
+# typical private LANs
+192.168.0.0/16
+10.0.0.0/8
+172.16.0.0/12

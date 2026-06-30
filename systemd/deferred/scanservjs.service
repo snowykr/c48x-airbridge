@@ -1,0 +1,5 @@
+# ARCHIVE ONLY: scanservjs is deferred for v1.
+#
+# The active v1 path is host-native CUPS/Avahi printing, SANE/Samsung local
+# scanner support, AirSane eSCL/AirScan exposure, and user-supplied macOS/Windows
+# manual evidence. This file is intentionally not an installable systemd unit.

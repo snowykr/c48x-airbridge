@@ -1,0 +1,10 @@
+{
+  "upstream_version": "AirSane 0.4.3",
+  "upstream_source": "https://github.com/SimulPiscator/AirSane",
+  "failed_gate_id": "gate-airscan-client-macos",
+  "local_diff": "patches/airsane-c480.diff",
+  "build_command": "cmake --build build",
+  "build_result": "dry-run",
+  "artifact_path": "dist/airsane-c480.deb",
+  "rollback_note": "systemctl revert airsane.service"
+}

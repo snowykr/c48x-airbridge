@@ -1,0 +1,43 @@
+{
+  "host": {
+    "ubuntu_version": "24.04",
+    "architecture": "amd64",
+    "cups_major_version": 1,
+    "cups_version_gate": "cups>=2",
+    "usb_vid_pid": "04e8:3433",
+    "local_flatbed_scan_checksum": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "sane_triplet": {
+      "current_user": true,
+      "root": true,
+      "saned": true,
+      "proof": "scanimage current-user/root/saned all detect Samsung C480"
+    },
+    "airsane_http": true,
+    "airsane_http_url": "http://127.0.0.1:8090/eSCL",
+    "airsane_http_proof": "AirSane HTTP reachable at http://127.0.0.1:8090/eSCL",
+    "uscan_mdns": true,
+    "uscan_mdns_service": "_uscan._tcp Samsung C480",
+    "cups_queue": true,
+    "cups_queue_name": "CUPS Samsung_C480",
+    "ipp_mdns": true,
+    "ipp_mdns_service": "_ipp._tcp Samsung_C480",
+    "reboot_persistence": true,
+    "reboot_persistence_note": "CUPS queue, AirSane HTTP, _uscan._tcp, and _ipp._tcp persisted after reboot"
+  },
+  "log_bundle_references": [
+    "host/cups/error_log",
+    "host/sane/scanimage-triplet.log",
+    "host/airsane/http.log",
+    "host/avahi/mdns-services.log"
+  ],
+  "feature_limits": [
+    "manual-client-native-drivers-only"
+  ],
+  "no_vendor_client_driver_policy": "PASS requires macOS/Windows native print and scan evidence with no Samsung vendor client driver installed",
+  "manual_evidence": {
+    "macos_print": null,
+    "windows_print": null,
+    "macos_scan": null,
+    "windows_scan": null
+  }
+}

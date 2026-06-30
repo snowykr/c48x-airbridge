@@ -1,0 +1,76 @@
+{
+  "host": {
+    "ubuntu_version": "24.04",
+    "architecture": "amd64",
+    "cups_major_version": 2,
+    "cups_version_gate": "cups>=2",
+    "usb_vid_pid": "04e8:3433",
+    "local_flatbed_scan_checksum": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "sane_triplet": {
+      "current_user": true,
+      "root": true,
+      "saned": true,
+      "proof": "scanimage current-user/root/saned all detect Samsung C480"
+    },
+    "airsane_http": true,
+    "airsane_http_url": "http://127.0.0.1:8090/eSCL",
+    "airsane_http_proof": "AirSane HTTP reachable at http://127.0.0.1:8090/eSCL",
+    "uscan_mdns": true,
+    "uscan_mdns_service": "_uscan._tcp Samsung C480",
+    "cups_queue": true,
+    "cups_queue_name": "CUPS Samsung_C480",
+    "ipp_mdns": true,
+    "ipp_mdns_service": "_ipp._tcp Samsung_C480",
+    "reboot_persistence": true,
+    "reboot_persistence_note": "CUPS queue, AirSane HTTP, _uscan._tcp, and _ipp._tcp persisted after reboot"
+  },
+  "log_bundle_references": [
+    "host/cups/error_log",
+    "host/sane/scanimage-triplet.log",
+    "host/airsane/http.log",
+    "host/avahi/mdns-services.log",
+    "manual/macos-print.log",
+    "manual/windows-print.log",
+    "manual/macos-scan.log",
+    "manual/windows-scan.log"
+  ],
+  "feature_limits": [
+    "manual-client-native-drivers-only",
+    "feature-limit: native AirSane/eSCL bridge does not claim Samsung vendor-only client features"
+  ],
+  "no_vendor_client_driver_policy": "PASS requires macOS/Windows native print and scan evidence with no Samsung vendor client driver installed",
+  "manual_evidence": {
+    "macos_print": {
+      "name": "macOS native print",
+      "result": "PASS",
+      "discovery_proof": "_ipp._tcp Samsung_C480 visible in macOS Add Printer; no Samsung vendor client driver installed",
+      "timestamp": "2026-06-30T00:00:00Z",
+      "note": "Printed proof page through native AirPrint/IPP path",
+      "log_bundle_id": "manual/macos-print.log"
+    },
+    "windows_print": {
+      "name": "Windows native print",
+      "result": "PASS",
+      "discovery_proof": "_ipp._tcp Samsung_C480 visible in Windows Printers & scanners; no Samsung vendor client driver installed",
+      "timestamp": "2026-06-30T00:00:00Z",
+      "note": "Printed proof page through native IPP path",
+      "log_bundle_id": "manual/windows-print.log"
+    },
+    "macos_scan": {
+      "name": "macOS native scan",
+      "result": "PASS",
+      "discovery_proof": "_uscan._tcp Samsung C480 visible in Image Capture; no Samsung vendor client driver installed",
+      "timestamp": "2026-06-30T00:00:00Z",
+      "note": "Captured flatbed preview through native eSCL path",
+      "log_bundle_id": "manual/macos-scan.log"
+    },
+    "windows_scan": {
+      "name": "Windows native scan",
+      "result": "PASS",
+      "discovery_proof": "_uscan._tcp Samsung C480 visible in Windows Scan; no Samsung vendor client driver installed",
+      "timestamp": "2026-06-30T00:00:00Z",
+      "note": "Captured flatbed preview through native WSD/eSCL-compatible path",
+      "log_bundle_id": "manual/windows-scan.log"
+    }
+  }
+}

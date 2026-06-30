@@ -1,0 +1,5 @@
+# Samsung USB scanner access for C480/C48x class devices.
+# Prefer pinning the observed C480 product id after `lsusb` confirms it.
+# The product wildcard below is the documented v1 exception because C480/C480W/C48x
+# variants can report different product ids under Samsung vendor 04e8.
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="04e8", ENV{libsane_matched}="yes", GROUP="scanner", MODE="0664"

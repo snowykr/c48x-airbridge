@@ -1,0 +1,9 @@
+{
+  "upstream_version": "AirSane 0.4.3",
+  "upstream_source": "https://github.com/SimulPiscator/AirSane",
+  "local_diff": "patches/airsane-c480.diff",
+  "build_command": "cmake --build build",
+  "build_result": "not-run",
+  "artifact_path": "dist/airsane-c480.deb",
+  "rollback_note": "systemctl revert airsane.service"
+}
