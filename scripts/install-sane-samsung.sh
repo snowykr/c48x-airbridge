@@ -7,7 +7,7 @@ source "${ROOT_DIR}/scripts/common.sh"
 
 as_root
 log "Installing SANE, USB, and compatibility packages"
-apt_install sane-utils libsane libsane-common libusb-0.1-4 usbutils acl curl ca-certificates gnupg
+apt_install sane-utils libsane1 libsane-common libusb-0.1-4 usbutils acl curl ca-certificates gnupg
 
 log "Installing Samsung USB scanner udev rule"
 copy_file "${ROOT_DIR}/configs/udev/99-samsung-c480-scanner.rules" "/etc/udev/rules.d/99-samsung-c480-scanner.rules"

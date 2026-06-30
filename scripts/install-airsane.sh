@@ -56,11 +56,11 @@ if [[ -f "${ROOT_DIR}/configs/airsane/access.conf.example" ]]; then
 fi
 
 if [[ "${DRY_RUN}" == "1" ]]; then
-  restart_service airsane.service
-elif systemctl list-unit-files | grep -q '^airsane\.service'; then
-  restart_service airsane.service
+  restart_service airsaned.service
+elif [[ -f /usr/lib/systemd/system/airsaned.service || -f /lib/systemd/system/airsaned.service || -f /etc/systemd/system/airsaned.service ]]; then
+  restart_service airsaned.service
 else
-  warn "AirSane unit was not found after install. Check upstream install output and create/enable airsane.service if needed."
+  warn "AirSane unit was not found after install. Check upstream install output and create/enable airsaned.service if needed."
 fi
 
-log "Verify with: systemctl status airsane --no-pager; avahi-browse -rt _uscan._tcp; curl http://localhost:8090/"
+log "Verify with: systemctl status airsaned --no-pager; avahi-browse -rt _uscan._tcp; curl http://localhost:8090/"
