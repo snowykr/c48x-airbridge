@@ -7,9 +7,9 @@ Samsung C480 계열 USB 복합기를 Ubuntu 홈서버에 연결해 LAN 프린터
 - 프린트는 CUPS + Avahi로 공유한다.
 - 스캔은 먼저 Ubuntu 서버에서 SANE 장치로 안정적으로 잡혀야 한다.
 - C480 계열은 Samsung Unified Linux Driver/SULDR의 `smfp` SANE backend가 필요할 가능성이 높다.
-- macOS/Windows 네이티브 스캔 UX는 AirSane으로 eSCL/AirScan 장치를 광고한다.
+- macOS 네이티브 스캔 UX와 Windows eSCL 클라이언트는 AirSane으로 광고된 eSCL/AirScan 장치를 사용한다.
 - macOS/Windows 클라이언트 성공은 사용자가 제공한 수동 증거가 있어야 PASS로 기록한다.
-- v1은 클라이언트에 제조사 드라이버 설치를 요구하지 않는다. macOS Image Capture/Preview와 Windows 기본 Scanner 앱으로 검증한다.
+- v1은 클라이언트에 제조사 드라이버 설치를 요구하지 않는다. macOS Image Capture/Preview와 Windows 비제조사 eSCL 클라이언트로 검증한다.
 - `ipp-usb`는 진단 후보지만 C480 기본 경로의 1순위는 아니다. 성공하면 단순 경로로 전환하고, 실패하면 Samsung ULD/SANE 경로로 간다.
 
 ## 기술 스택
@@ -41,10 +41,10 @@ Samsung C480 계열 USB 복합기를 Ubuntu 홈서버에 연결해 LAN 프린터
 4. AirSane 네이티브 스캔
    - AirSane 빌드/설치는 명시 opt-in과 pinned commit이 있을 때만 수행
    - mDNS 광고 확인
-   - macOS Image Capture / Windows Scanner 앱에서 테스트
+   - macOS Image Capture / Windows 비제조사 eSCL 클라이언트에서 테스트
 5. macOS/Windows 수동 증거 기록
    - macOS: Image Capture/Preview에서 스캐너 표시와 실제 스캔 결과 확인
-   - Windows: 기본 Scanner 앱에서 장치 추가와 실제 스캔 결과 확인
+   - Windows: 비제조사 eSCL 클라이언트에서 장치 추가와 실제 스캔 결과 확인
    - 수동 증거가 없으면 `PENDING_MANUAL_QA` 또는 `BLOCKED_PENDING_MANUAL_EVIDENCE` 상태를 유지
 
 ## 빠른 사용법
@@ -107,8 +107,8 @@ curl -f http://localhost:8090/
 클라이언트 검증:
 
 - macOS: Image Capture/Preview에서 스캐너 표시
-- Windows 10/11: Settings → Bluetooth & devices → Printers & Scanners → Add device 후 Microsoft Scanner 앱에서 스캔
-- 제조사 클라이언트 드라이버 설치 없이 OS 기본 스캔 앱으로 검증
+- Windows 10/11: NAPS2 같은 비제조사 eSCL 클라이언트에서 AirSane/eSCL 장치를 추가한 뒤 실제 스캔
+- 제조사 클라이언트 드라이버 설치 없이 macOS 기본 스캔 앱 또는 Windows 비제조사 eSCL 클라이언트로 검증
 - 위 클라이언트 증거가 제출되기 전까지 자동 검증은 PASS가 아니라 `PENDING_MANUAL_QA` 또는 `BLOCKED_PENDING_MANUAL_EVIDENCE`를 반환해야 한다.
 
 ### 수동 증거 체크리스트
@@ -118,7 +118,7 @@ PASS로 기록하려면 다음 증거를 사용자에게 받아야 합니다.
 - macOS 프린트: 공유 프린터 선택 화면과 test page 출력 성공
 - macOS 스캔: Image Capture 또는 Preview에서 C480 장치 표시와 실제 스캔 성공
 - Windows 프린트: 기본 네트워크 프린터 추가와 test page 출력 성공
-- Windows 스캔: 기본 Scanner 앱에서 장치 표시와 실제 스캔 성공
+- Windows 스캔: 비제조사 eSCL 클라이언트에서 장치 표시와 실제 스캔 성공
 - 실패한 경우: 사용한 OS 버전, 앱 이름, 화면의 오류 문구, 서버에서 같은 시각의 CUPS/AirSane 상태
 
 ## 파일 구성

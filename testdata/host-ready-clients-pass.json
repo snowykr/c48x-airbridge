@@ -5,7 +5,7 @@
     "cups_major_version": 2,
     "cups_version_gate": "cups>=2",
     "usb_vid_pid": "04e8:3433",
-    "local_flatbed_scan_checksum": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "local_flatbed_scan_checksum": "sha256:e44e87e2c820380634cdea399f1706f5f66152fa49a9d6fad810ce49dc5012bf",
     "sane_triplet": {
       "current_user": true,
       "root": true,
@@ -65,11 +65,11 @@
       "log_bundle_id": "manual/macos-scan.log"
     },
     "windows_scan": {
-      "name": "Windows native scan",
+      "name": "Windows eSCL scan",
       "result": "PASS",
-      "discovery_proof": "_uscan._tcp Samsung C480 visible in Windows Scan; no Samsung vendor client driver installed",
+      "discovery_proof": "_uscan._tcp Samsung C480 visible in a non-Samsung eSCL client; no Samsung vendor client driver installed",
       "timestamp": "2026-06-30T00:00:00Z",
-      "note": "Captured flatbed preview through native WSD/eSCL-compatible path",
+      "note": "Captured flatbed preview through the host AirSane/eSCL path",
       "log_bundle_id": "manual/windows-scan.log"
     }
   }

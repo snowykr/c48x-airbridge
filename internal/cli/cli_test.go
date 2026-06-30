@@ -202,7 +202,7 @@ func Test_Verify_reportsFail_whenHostEvidenceFieldsAreMalformed(t *testing.T) {
 			"macos_print": {"name": "macOS print", "result": "PASS", "discovery_proof": "printer C480 visible in macOS Add Printer", "timestamp": "2026-06-30T00:00:00Z", "log_bundle_id": "macos-print-20260630"},
 			"windows_print": {"name": "Windows print", "result": "PASS", "discovery_proof": "printer C480 visible in Windows Printers & scanners", "timestamp": "2026-06-30T00:00:00Z", "log_bundle_id": "windows-print-20260630"},
 			"macos_scan": {"name": "macOS scan", "result": "PASS", "discovery_proof": "scanner C480 visible in Image Capture", "timestamp": "2026-06-30T00:00:00Z", "log_bundle_id": "macos-scan-20260630"},
-			"windows_scan": {"name": "Windows scan", "result": "PASS", "discovery_proof": "scanner C480 visible in Windows Scan", "timestamp": "2026-06-30T00:00:00Z", "log_bundle_id": "windows-scan-20260630"}
+			"windows_scan": {"name": "Windows eSCL scan", "result": "PASS", "discovery_proof": "scanner C480 visible in a non-Samsung eSCL client", "timestamp": "2026-06-30T00:00:00Z", "log_bundle_id": "windows-scan-20260630"}
 		}
 	}`)
 	cmd := NewCommand(Streams{Out: out, Err: errOut})

@@ -54,7 +54,7 @@ func evaluateFixture(fixture verifyFixture) verifyResult {
 		return verifyResult{
 			State:  "BLOCKED_PENDING_MANUAL_EVIDENCE",
 			Reason: "manual client evidence missing; PENDING_MANUAL_QA until user supplies macOS/Windows print and scan proof",
-			Gates:  []string{"macOS native print", "Windows native print", "macOS native scan", "Windows native scan"},
+			Gates:  []string{"macOS native print", "Windows native print", "macOS native scan", "Windows eSCL client scan"},
 		}
 	}
 	if !manualEvidencePassed(fixture.ManualEvidence) {
@@ -68,13 +68,13 @@ func evaluateFixture(fixture verifyFixture) verifyResult {
 		return verifyResult{
 			State:  "BLOCKED_PENDING_MANUAL_EVIDENCE",
 			Reason: "manual client evidence proof incomplete; PENDING_MANUAL_QA until user supplies macOS/Windows print and scan proof",
-			Gates:  []string{"macOS native print proof", "Windows native print proof", "macOS native scan proof", "Windows native scan proof"},
+			Gates:  []string{"macOS native print proof", "Windows native print proof", "macOS native scan proof", "Windows eSCL client scan proof"},
 		}
 	}
 	return verifyResult{
 		State:  "PASS",
 		Reason: "host and manual client evidence passed",
-		Gates:  []string{"macOS print", "Windows print", "macOS scan", "Windows scan"},
+		Gates:  []string{"macOS print", "Windows print", "macOS scan", "Windows eSCL scan"},
 	}
 }
 
