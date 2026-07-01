@@ -30,6 +30,6 @@ func NewCommand(streams Streams) *cobra.Command {
 	}
 	cmd.SetOut(streams.Out)
 	cmd.SetErr(streams.Err)
-	cmd.AddCommand(newDiagnoseCommand(streams), newInstallCommand(streams), newVerifyCommand(streams), newLogsCommand(streams), newPatchCommand(streams))
+	cmd.AddCommand(newDiagnoseCommand(streams), newInstallCommand(streams), newSetupCommand(streams), newVerifyCommand(streams), newLogsCommand(streams), newPatchCommand(streams))
 	return cmd
 }
