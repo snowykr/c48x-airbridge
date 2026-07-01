@@ -1,11 +1,14 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 	"time"
+
+	"c48x-airbridge/internal/hostprobe"
 
 	"github.com/spf13/cobra"
 )
@@ -16,28 +19,72 @@ var (
 	usbVIDPIDPattern   = regexp.MustCompile(`^[0-9a-fA-F]{4}:[0-9a-fA-F]{4}$`)
 )
 
+type verifyOptions struct {
+	FixturePath string
+	Live        bool
+	OutputPath  string
+}
+
+type verifyProbe interface {
+	Run(ctx context.Context) hostprobe.Report
+}
+
+type verifyRunRequest struct {
+	ctx     context.Context
+	streams Streams
+	options verifyOptions
+	probe   verifyProbe
+}
+
 func newVerifyCommand(streams Streams) *cobra.Command {
-	var fixturePath string
+	return newVerifyCommandWithProbe(streams, hostprobe.New(hostprobe.Options{}))
+}
+
+func newVerifyCommandWithProbe(streams Streams, probe verifyProbe) *cobra.Command {
+	options := verifyOptions{}
 	cmd := &cobra.Command{
 		Use:   "verify",
 		Short: "Evaluate host and manual client evidence state",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fixture, err := loadFixture(fixturePath)
-			if err != nil {
-				return err
-			}
-			result := evaluateFixture(fixture)
-			_, err = fmt.Fprintf(streams.Out, "state: %s\nreason: %s\ngates:\n- %s\n", result.State, result.Reason, strings.Join(result.Gates, "\n- "))
-			return err
+			return runVerify(verifyRunRequest{
+				ctx:     cmd.Context(),
+				streams: streams,
+				options: options,
+				probe:   probe,
+			})
 		},
 	}
-	cmd.Flags().StringVar(&fixturePath, "fixture", "", "path to host/manual evidence fixture")
+	cmd.Flags().StringVar(&options.FixturePath, "fixture", "", "path to host/manual evidence fixture")
+	cmd.Flags().BoolVar(&options.Live, "live", false, "run non-mutating live host verification")
+	cmd.Flags().StringVar(&options.OutputPath, "output", "", "write structured verification evidence JSON")
 	return cmd
+}
+
+func runVerify(request verifyRunRequest) error {
+	if request.options.Live {
+		report := request.probe.Run(request.ctx)
+		result := evaluateLiveReport(report)
+		bundle := newLiveVerifyBundle(result, report)
+		if err := writeVerifyOutput(request.options.OutputPath, bundle); err != nil {
+			return err
+		}
+		return printVerifyResult(request.streams, result, bundle.ClientHandoff)
+	}
+	fixture, err := loadFixture(request.options.FixturePath)
+	if err != nil {
+		return err
+	}
+	result := evaluateFixture(fixture)
+	bundle := newFixtureVerifyBundle(result, fixture)
+	if err := writeVerifyOutput(request.options.OutputPath, bundle); err != nil {
+		return err
+	}
+	return printVerifyResult(request.streams, result, nil)
 }
 
 func loadFixture(path string) (verifyFixture, error) {
 	if path == "" {
-		return verifyFixture{}, errors.New("verify fixture path is required")
+		return verifyFixture{}, errors.New("verify fixture path is required unless --live is used")
 	}
 	return readJSON[verifyFixture](path)
 }
@@ -128,4 +175,19 @@ func evidenceItemProofComplete(item *evidenceItem) bool {
 	}
 	_, err := time.Parse(time.RFC3339, strings.TrimSpace(item.Timestamp))
 	return err == nil
+}
+
+func printVerifyResult(streams Streams, result verifyResult, handoff []string) error {
+	lines := []string{
+		"state: " + result.State,
+		"reason: " + result.Reason,
+		"gates:",
+		"- " + strings.Join(result.Gates, "\n- "),
+	}
+	if len(handoff) > 0 {
+		lines = append(lines, "")
+		lines = append(lines, handoff...)
+	}
+	_, err := fmt.Fprintln(streams.Out, strings.Join(lines, "\n"))
+	return err
 }
