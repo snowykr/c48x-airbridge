@@ -53,6 +53,9 @@ func runSetupFakeRunner(ctx context.Context, streams Streams, options setupOptio
 	if err != nil {
 		return err
 	}
+	if options.Component == setupComponentAll && len(fixture.Steps) == 0 {
+		return runGuidedSetupFakeRunner(request, fixture)
+	}
 	if options.Component == setupComponentCUPS && len(fixture.Steps) == 0 {
 		return runCUPSSetupFakeRunner(request, fixture)
 	}

@@ -1,0 +1,10 @@
+{
+  "name": "blocked-driver",
+  "command_log_path": "/var/log/c48x-airbridge/commands.log",
+  "commands": {},
+  "probe_outputs": {
+    "lpinfo -v": "direct usb://Samsung/C48x%20Series?serial=Z9MJBAK\n",
+    "sane.smfp_backend": "missing",
+    "airsane.commit": "0123456789abcdef0123456789abcdef01234567"
+  }
+}

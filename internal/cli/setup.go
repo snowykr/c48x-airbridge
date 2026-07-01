@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -150,18 +152,24 @@ func runSetup(cmd *cobra.Command, streams Streams, options setupOptions) error {
 }
 
 func promptForSetupApproval(cmd *cobra.Command, streams Streams, options setupOptions) error {
-	if !isTerminalInput(cmd) {
-		return errSetupPromptRequired
-	}
 	_, err := fmt.Fprintln(streams.Out, strings.Join(setupPlan(options), "\n"))
 	if err != nil {
 		return err
 	}
-	return errSetupPromptRequired
-}
-
-func isTerminalInput(cmd *cobra.Command) bool {
-	return cmd.InOrStdin() == os.Stdin
+	if _, err := fmt.Fprint(streams.Out, "\nApply setup plan? [y/N] "); err != nil {
+		return err
+	}
+	answer, readErr := bufio.NewReader(cmd.InOrStdin()).ReadString('\n')
+	if readErr != nil && !errors.Is(readErr, io.EOF) {
+		return fmt.Errorf("read setup approval: %w", readErr)
+	}
+	switch strings.ToLower(strings.TrimSpace(answer)) {
+	case "y", "yes":
+		options.Yes = true
+		return runSetup(cmd, streams, options)
+	default:
+		return errSetupPromptRequired
+	}
 }
 
 func setupPlan(options setupOptions) []string {

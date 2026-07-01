@@ -1,0 +1,120 @@
+{
+  "name": "success",
+  "command_log_path": "/var/log/c48x-airbridge/commands.log",
+  "file_preloads": [
+    {
+      "path": "/etc/sane.d/dll.conf",
+      "content": "smfp\n",
+      "mode": 420
+    }
+  ],
+  "commands": {
+    "apt-get install -y cups cups-client avahi-daemon avahi-utils printer-driver-splix system-config-printer": {
+      "exit_code": 0
+    },
+    "systemctl enable --now cups": {
+      "exit_code": 0
+    },
+    "systemctl enable --now avahi-daemon": {
+      "exit_code": 0
+    },
+    "cupsctl --share-printers --no-remote-admin --no-remote-any": {
+      "exit_code": 0
+    },
+    "lpinfo -v": {
+      "exit_code": 0,
+      "stdout": "direct usb://Samsung/C48x%20Series?serial=Z9MJBAK\n"
+    },
+    "lpadmin -p C48X-Series -E -v usb://Samsung/C48x%20Series?serial=Z9MJBAK -m drv:///splix-samsung.drv/samsung-c48x.ppd": {
+      "exit_code": 0
+    },
+    "lpstat -t": {
+      "exit_code": 0,
+      "stdout": "printer C48X-Series is idle\n"
+    },
+    "avahi-browse -rt _ipp._tcp": {
+      "exit_code": 0,
+      "stdout": "+ eth0 IPv4 Samsung C48x Series @ host Internet Printer local\n"
+    },
+    "apt-get install -y sane-utils libsane1 libsane-common libusb-0.1-4 usbutils acl curl ca-certificates gnupg": {
+      "exit_code": 0
+    },
+    "udevadm control --reload-rules": {
+      "exit_code": 0
+    },
+    "udevadm trigger": {
+      "exit_code": 0
+    },
+    "groupadd -f scanner": {
+      "exit_code": 0
+    },
+    "usermod -aG scanner,lp saned": {
+      "exit_code": 0
+    },
+    "scanimage -L": {
+      "exit_code": 0,
+      "stdout": "device `smfp:usb;04e8;342e' is a Samsung C48x Series\n"
+    },
+    "sudo scanimage -L": {
+      "exit_code": 0,
+      "stdout": "device `smfp:usb;04e8;342e' is a Samsung C48x Series\n"
+    },
+    "sudo -u saned scanimage -L": {
+      "exit_code": 0,
+      "stdout": "device `smfp:usb;04e8;342e' is a Samsung C48x Series\n"
+    },
+    "apt-get install -y git cmake g++ make pkg-config libsane-dev libjpeg-dev libpng-dev libavahi-client-dev libusb-1.0-0-dev curl avahi-utils": {
+      "exit_code": 0
+    },
+    "git clone --no-checkout https://github.com/SimulPiscator/AirSane.git /usr/local/src/AirSane": {
+      "exit_code": 0
+    },
+    "git -C /usr/local/src/AirSane fetch --tags origin 0123456789abcdef0123456789abcdef01234567": {
+      "exit_code": 0
+    },
+    "git -C /usr/local/src/AirSane checkout --detach 0123456789abcdef0123456789abcdef01234567": {
+      "exit_code": 0
+    },
+    "cmake -S /usr/local/src/AirSane -B /usr/local/src/AirSane/build -DCMAKE_BUILD_TYPE=Release": {
+      "exit_code": 0
+    },
+    "cmake --build /usr/local/src/AirSane/build --parallel": {
+      "exit_code": 0
+    },
+    "cmake --install /usr/local/src/AirSane/build": {
+      "exit_code": 0
+    },
+    "systemctl enable --now airsaned.service": {
+      "exit_code": 0
+    },
+    "systemctl restart airsaned.service": {
+      "exit_code": 0
+    },
+    "systemctl status airsaned.service --no-pager": {
+      "exit_code": 0
+    },
+    "avahi-browse -rt _uscan._tcp": {
+      "exit_code": 0,
+      "stdout": "_uscan._tcp Samsung C480"
+    },
+    "curl -fsS --max-time 2 http://localhost:8090/eSCL/ScannerStatus": {
+      "exit_code": 0,
+      "stdout": "<ScannerStatus>Idle</ScannerStatus>"
+    }
+  },
+  "probe_outputs": {
+    "lpinfo -v": "direct usb://Samsung/C48x%20Series?serial=Z9MJBAK\n",
+    "sane.smfp_backend": "/usr/lib/sane/libsane-smfp.so.1",
+    "airsane.commit": "0123456789abcdef0123456789abcdef01234567"
+  },
+  "expected_writes": [
+    {
+      "path": "/etc/sane.d/dll.conf",
+      "content": "smfp\n"
+    },
+    {
+      "path": "/etc/airsane/access.conf",
+      "content": "# Managed by c48x-airbridge\n127.0.0.1/32\n::1/128\n192.168.0.0/16\n10.0.0.0/8\n172.16.0.0/12\n"
+    }
+  ]
+}
