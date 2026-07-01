@@ -1,4 +1,4 @@
-# local-printer-scanner
+# c48x-airbridge
 
 Samsung C48x/C480 계열 USB 복합기를 Ubuntu 홈서버에 연결해, 같은 LAN의
 macOS와 Windows에서 프린터와 스캐너로 쓰기 위한 host-native 운영 가이드입니다.
@@ -30,16 +30,16 @@ Windows 로컬 USB 스캔 드라이버를 쓰는 경로가 아닙니다.
 ## 저장소 받기
 
 ```bash
-git clone https://github.com/snowykr/local-printer-scanner.git
-cd local-printer-scanner
+git clone https://github.com/snowykr/c48x-airbridge.git
+cd c48x-airbridge
 ```
 
 비파괴 점검용 CLI는 Go로 작성되어 있습니다.
 
 ```bash
-./bin/local-printer-scanner help
-./bin/local-printer-scanner diagnose
-./bin/local-printer-scanner install --dry-run
+./bin/c48x-airbridge help
+./bin/c48x-airbridge diagnose
+./bin/c48x-airbridge install --dry-run
 ```
 
 `install --dry-run`은 실제 설치를 하지 않습니다. 실제 host 변경은 아래 설치
@@ -190,7 +190,7 @@ curl -f http://localhost:8090/
 저장소 CLI의 비파괴 점검:
 
 ```bash
-./bin/local-printer-scanner diagnose
+./bin/c48x-airbridge diagnose
 ```
 
 ## 문제 해결
@@ -245,8 +245,8 @@ avahi-browse -rt _uscan._tcp
 
 ## 파일 구성
 
-- `bin/local-printer-scanner`: 운영 CLI entrypoint
-- `cmd/local-printer-scanner/`: Go CLI main
+- `bin/c48x-airbridge`: 운영 CLI entrypoint
+- `cmd/c48x-airbridge/`: Go CLI main
 - `internal/cli/`: CLI 명령 구현
 - `scripts/install-cups.sh`: CUPS/Avahi 설치와 프린터 공유 설정
 - `scripts/install-sane-samsung.sh`: SANE/Samsung scanner backend 준비

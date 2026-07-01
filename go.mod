@@ -1,4 +1,4 @@
-module local-printer-scanner
+module c48x-airbridge
 
 go 1.25
 

@@ -23,7 +23,7 @@ func NewCommand(streams Streams) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:           "local-printer-scanner",
+		Use:           "c48x-airbridge",
 		Short:         "Operate a host-native Samsung C480 printer/scanner bridge",
 		SilenceErrors: true,
 		SilenceUsage:  true,

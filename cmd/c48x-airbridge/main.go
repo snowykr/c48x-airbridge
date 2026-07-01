@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"local-printer-scanner/internal/cli"
+	"c48x-airbridge/internal/cli"
 )
 
 func main() {

@@ -3,4 +3,4 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-exec go run "${ROOT_DIR}/cmd/local-printer-scanner" "$@"
+exec go run "${ROOT_DIR}/cmd/c48x-airbridge" "$@"

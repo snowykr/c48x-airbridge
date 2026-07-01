@@ -1,5 +1,5 @@
 SHELL := /usr/bin/env bash
-SCRIPTS := bin/local-printer-scanner scripts/common.sh scripts/diagnose.sh scripts/install-cups.sh scripts/install-sane-samsung.sh scripts/install-airsane.sh
+SCRIPTS := bin/c48x-airbridge scripts/common.sh scripts/diagnose.sh scripts/install-cups.sh scripts/install-sane-samsung.sh scripts/install-airsane.sh
 
 .PHONY: check syntax dry-run help
 
@@ -12,4 +12,4 @@ syntax:
 	@for script in $(SCRIPTS); do bash -n "$$script"; done
 
 dry-run:
-	@./bin/local-printer-scanner install --dry-run >/dev/null
+	@./bin/c48x-airbridge install --dry-run >/dev/null

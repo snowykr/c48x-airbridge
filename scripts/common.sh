@@ -5,15 +5,15 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DRY_RUN="${DRY_RUN:-0}"
 
 log() {
-  printf '[local-printer-scanner] %s\n' "$*"
+  printf '[c48x-airbridge] %s\n' "$*"
 }
 
 warn() {
-  printf '[local-printer-scanner] WARN: %s\n' "$*" >&2
+  printf '[c48x-airbridge] WARN: %s\n' "$*" >&2
 }
 
 fail() {
-  printf '[local-printer-scanner] ERROR: %s\n' "$*" >&2
+  printf '[c48x-airbridge] ERROR: %s\n' "$*" >&2
   exit 1
 }
 
