@@ -1,0 +1,17 @@
+{
+  "name": "scanner-missing-backend",
+  "command_log_path": "/var/log/c48x-airbridge/commands.log",
+  "file_preloads": [
+    {
+      "path": "/etc/sane.d/dll.conf",
+      "content": "net\n",
+      "mode": 420
+    }
+  ],
+  "steps": [],
+  "commands": {},
+  "probe_outputs": {
+    "sane.smfp_backend": "missing"
+  },
+  "expected_writes": []
+}

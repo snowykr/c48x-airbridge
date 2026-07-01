@@ -1,0 +1,50 @@
+{
+  "name": "scanner-installed-backend",
+  "command_log_path": "/var/log/c48x-airbridge/commands.log",
+  "file_preloads": [
+    {
+      "path": "/etc/sane.d/dll.conf",
+      "content": "smfp\n",
+      "mode": 420
+    }
+  ],
+  "steps": [],
+  "commands": {
+    "apt-get install -y sane-utils libsane1 libsane-common libusb-0.1-4 usbutils acl curl ca-certificates gnupg": {
+      "exit_code": 0
+    },
+    "udevadm control --reload-rules": {
+      "exit_code": 0
+    },
+    "udevadm trigger": {
+      "exit_code": 0
+    },
+    "groupadd -f scanner": {
+      "exit_code": 0
+    },
+    "usermod -aG scanner,lp saned": {
+      "exit_code": 0
+    },
+    "scanimage -L": {
+      "exit_code": 0,
+      "stdout": "device `smfp:usb;04e8;342e' is a Samsung C48x Series\n"
+    },
+    "sudo scanimage -L": {
+      "exit_code": 0,
+      "stdout": "device `smfp:usb;04e8;342e' is a Samsung C48x Series\n"
+    },
+    "sudo -u saned scanimage -L": {
+      "exit_code": 0,
+      "stdout": "device `smfp:usb;04e8;342e' is a Samsung C48x Series\n"
+    }
+  },
+  "probe_outputs": {
+    "sane.smfp_backend": "/usr/lib/sane/libsane-smfp.so.1"
+  },
+  "expected_writes": [
+    {
+      "path": "/etc/sane.d/dll.conf",
+      "content": "smfp\n"
+    }
+  ]
+}

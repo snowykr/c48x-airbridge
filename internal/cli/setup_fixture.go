@@ -50,6 +50,9 @@ func runSetupFakeRunner(ctx context.Context, streams Streams, options setupOptio
 	if err := fixture.preload(root); err != nil {
 		return err
 	}
+	if options.Component == setupComponentScanner {
+		return runScannerSetupFakeRunner(ctx, streams, options, fixture)
+	}
 	runner := NewSafeHostRunner(SafeHostRunnerConfig{
 		Root:           root,
 		CommandRunner:  NewFakeCommandRunner(fixture.Commands),
