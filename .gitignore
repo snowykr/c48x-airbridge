@@ -1,1 +1,28 @@
+# Agent/session state
 .gjc/
+.omo/
+.ulw/
+
+# Go build/test outputs
+/local-printer-scanner
+*.test
+*.out
+*.prof
+coverage.out
+coverage.html
+
+# Local build and packaging directories
+/build/
+/dist/
+/tmp/
+
+# Runtime logs and temporary files
+*.log
+*.tmp
+*.bak
+
+# Editor and OS metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
