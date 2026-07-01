@@ -46,6 +46,9 @@ func runSetupFakeRunner(ctx context.Context, streams Streams, options setupOptio
 	if err != nil {
 		return err
 	}
+	if options.Component == setupComponentAirSane && len(fixture.Steps) == 0 {
+		return runAirSaneSetupFakeRunner(ctx, streams, options, fixture)
+	}
 	root := os.Getenv("C48X_AIRBRIDGE_FAKE_ROOT")
 	if err := fixture.preload(root); err != nil {
 		return err
@@ -59,6 +62,31 @@ func runSetupFakeRunner(ctx context.Context, streams Streams, options setupOptio
 		CommandLogPath: fixture.CommandLogPath,
 	})
 	result, err := runner.Run(ctx, fixture.hostSteps())
+	if err != nil {
+		return err
+	}
+	if err := fixture.verifyExpectedWrites(root); err != nil {
+		result.State = setupStateFail
+		result.Reason = err.Error()
+	}
+	return printSetupRunnerResult(streams, options, fixture, result)
+}
+
+func runAirSaneSetupFakeRunner(ctx context.Context, streams Streams, options setupOptions, fixture setupRunnerFixture) error {
+	plan := buildAirSaneSetupPlan(options)
+	if plan.State != setupStatePass {
+		return printSetupRunnerResult(streams, options, fixture, airSaneBlockedResult(plan, fixture.CommandLogPath))
+	}
+	root := os.Getenv("C48X_AIRBRIDGE_FAKE_ROOT")
+	if err := fixture.preload(root); err != nil {
+		return err
+	}
+	runner := NewSafeHostRunner(SafeHostRunnerConfig{
+		Root:           root,
+		CommandRunner:  NewFakeCommandRunner(fixture.Commands),
+		CommandLogPath: fixture.CommandLogPath,
+	})
+	result, err := runner.Run(ctx, plan.Steps)
 	if err != nil {
 		return err
 	}
