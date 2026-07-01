@@ -142,6 +142,9 @@ func runSetup(cmd *cobra.Command, streams Streams, options setupOptions) error {
 	if !options.Yes {
 		return promptForSetupApproval(cmd, streams, options)
 	}
+	if options.FakeRunner != "" {
+		return runSetupFakeRunner(cmd.Context(), streams, options)
+	}
 	_, err := fmt.Fprintln(streams.Out, strings.Join(setupApplyScaffold(options), "\n"))
 	return err
 }

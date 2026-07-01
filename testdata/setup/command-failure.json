@@ -1,0 +1,68 @@
+{
+  "name": "command-failure",
+  "command_log_path": "/var/log/c48x-airbridge/commands.log",
+  "file_preloads": [
+    {
+      "path": "/etc/cups/cupsd.conf",
+      "content": "old config\n",
+      "mode": 420
+    }
+  ],
+  "steps": [
+    {
+      "type": "command",
+      "name": "install cups",
+      "command": "apt-get",
+      "args": ["install", "-y", "cups"],
+      "sudo": true
+    },
+    {
+      "type": "command",
+      "name": "enable cups",
+      "command": "systemctl",
+      "args": ["enable", "--now", "cups"],
+      "sudo": true
+    },
+    {
+      "type": "command",
+      "name": "create queue",
+      "command": "lpadmin",
+      "args": ["-p", "C48X", "-E"],
+      "sudo": true
+    },
+    {
+      "type": "command",
+      "name": "configure build",
+      "command": "cmake",
+      "args": ["-S", ".", "-B", "build"]
+    },
+    {
+      "type": "write_file",
+      "path": "/etc/cups/cupsd.conf",
+      "content": "new config\n",
+      "mode": 420
+    }
+  ],
+  "commands": {
+    "apt-get install -y cups": {
+      "exit_code": 9,
+      "stderr": "fixture package failure"
+    },
+    "systemctl enable --now cups": {
+      "exit_code": 0
+    },
+    "lpadmin -p C48X -E": {
+      "exit_code": 0
+    },
+    "cmake -S . -B build": {
+      "exit_code": 0
+    }
+  },
+  "probe_outputs": {},
+  "expected_writes": [
+    {
+      "path": "/etc/cups/cupsd.conf",
+      "content": "old config\n"
+    }
+  ]
+}
