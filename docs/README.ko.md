@@ -23,7 +23,9 @@ PC에 USB로 직접 연결된 스캐너용입니다.
 - Windows 스캔용 NAPS2
 - host에 Samsung `smfp` SANE backend가 없다면 신뢰할 수 있는 Samsung/SULDR
   scanner backend `.deb`
-- AirSane을 빌드해야 한다면 40자 AirSane git commit 해시
+- AirSane build는 기본으로 프로젝트가 승인한 upstream pin을 사용합니다:
+  `SimulPiscator/AirSane` tag `v0.4.12`, commit
+  `129cc3bf7258251a0a694dee7741285b59d88f9f`
 
 프린터 전원이 꺼져 있거나 USB가 빠져 있으면 서비스가 떠 있어도 실제 인쇄와
 스캔은 실패할 수 있습니다. 먼저 전원과 USB 연결을 확인하세요.
@@ -46,8 +48,7 @@ host를 변경하지 않고 bootstrap/build 실행 경로를 먼저 봅니다.
 guided host setup을 실행합니다.
 
 ```bash
-./scripts/bootstrap-setup.sh --yes \
-  --airsane-commit <40-character-AirSane-commit>
+./scripts/bootstrap-setup.sh --yes
 ```
 
 Samsung scanner backend 때문에 `BLOCKED_DRIVER_REQUIRED`가 나오면, 신뢰할 수
@@ -55,9 +56,14 @@ Samsung scanner backend 때문에 `BLOCKED_DRIVER_REQUIRED`가 나오면, 신뢰
 
 ```bash
 ./scripts/bootstrap-setup.sh --yes \
-  --suldr-deb /path/to/suld-driver2.deb \
-  --airsane-commit <40-character-AirSane-commit>
+  --suldr-deb /path/to/suld-driver2.deb
 ```
+
+일반 setup은 AirSane source를 floating branch나 tag에서 가져오지 않습니다. 기본
+source는 승인된 upstream tag `v0.4.12`와 commit
+`129cc3bf7258251a0a694dee7741285b59d88f9f`입니다. 고급 사용자는
+`--airsane-commit <40-character-AirSane-commit>`으로 pin을 바꿀 수 있지만,
+branch, tag, `latest` 값은 거부됩니다.
 
 bootstrap script는 Go/build tooling을 확인하고, `sudo go run` 없이 CLI를 빌드한
 뒤 `c48x-airbridge setup`을 실행합니다. Go가 없을 때 dry-run/no-input 모드는
@@ -75,8 +81,9 @@ make setup
 
 - `PASS`: 선택한 host check가 통과했습니다.
 - `BLOCKED_PRINTER_REQUIRED`: 프린터 전원이나 USB 연결을 확인하고 다시 실행합니다.
-- `BLOCKED_DRIVER_REQUIRED`: 출력에 나온 `--suldr-deb` 또는 `--airsane-commit`을
-  제공하고 다시 실행합니다.
+- `BLOCKED_DRIVER_REQUIRED`: Samsung scanner backend가 없으면 신뢰할 수 있는
+  Samsung/SULDR `.deb`를 제공합니다. 출력이 AirSane override 문제를 지적하면
+  40자 commit으로 바꿔서 다시 실행합니다.
 - `BLOCKED_CLIENT_PROOF`: host 준비가 끝났습니다. macOS/Windows 클라이언트에서
   인쇄와 스캔을 확인합니다.
 - `FAIL`: 원인을 고친 뒤 setup 또는 verify를 다시 실행합니다.
@@ -176,23 +183,25 @@ curl http://<host>:8090/eSCL/ScannerStatus
 
 ### `BLOCKED_DRIVER_REQUIRED`
 
-installer가 안전한 scanner backend 또는 pinned AirSane source를 찾지 못했습니다.
-출력에 나온 옵션을 추가해서 다시 실행합니다.
+installer가 안전한 Samsung scanner backend를 찾지 못했거나, 명시한 AirSane
+override가 40자 commit이 아닙니다. 출력에 나온 옵션을 추가해서 다시 실행합니다.
 
 Samsung scanner backend:
 
 ```bash
 ./scripts/bootstrap-setup.sh --yes \
-  --suldr-deb /path/to/suld-driver2.deb \
-  --airsane-commit <40-character-AirSane-commit>
+  --suldr-deb /path/to/suld-driver2.deb
 ```
 
-AirSane:
+AirSane 고급 override:
 
 ```bash
 ./scripts/bootstrap-setup.sh --yes \
   --airsane-commit <40-character-AirSane-commit>
 ```
+
+일반 setup에는 `--airsane-commit`이 필요하지 않습니다. 기본값은 승인된 upstream
+pin `129cc3bf7258251a0a694dee7741285b59d88f9f`입니다.
 
 ### 인쇄는 되는데 스캔만 안 될 때
 

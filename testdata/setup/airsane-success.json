@@ -14,10 +14,10 @@
     "git clone --no-checkout https://github.com/SimulPiscator/AirSane.git /tmp/c48x-airbridge/airsane/source": {
       "exit_code": 0
     },
-    "git -C /tmp/c48x-airbridge/airsane/source fetch --tags origin 0123456789abcdef0123456789abcdef01234567": {
+    "git -C /tmp/c48x-airbridge/airsane/source fetch --tags origin 129cc3bf7258251a0a694dee7741285b59d88f9f": {
       "exit_code": 0
     },
-    "git -C /tmp/c48x-airbridge/airsane/source checkout --detach 0123456789abcdef0123456789abcdef01234567": {
+    "git -C /tmp/c48x-airbridge/airsane/source checkout --detach 129cc3bf7258251a0a694dee7741285b59d88f9f": {
       "exit_code": 0
     },
     "cmake -S /tmp/c48x-airbridge/airsane/source -B /tmp/c48x-airbridge/airsane/source/build -DCMAKE_BUILD_TYPE=Release": {

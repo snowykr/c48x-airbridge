@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+const approvedAirSaneCommitForTest = "129cc3bf7258251a0a694dee7741285b59d88f9f"
+
 func Test_SetupDependencyResolver_prefersInstalledBackend_whenAvailable(t *testing.T) {
 	// Given
 	request := setupDependencyRequest{
@@ -21,6 +23,27 @@ func Test_SetupDependencyResolver_prefersInstalledBackend_whenAvailable(t *testi
 	}
 	if got.State != setupStatePass {
 		t.Fatalf("resolver returned state %q, want %q", got.State, setupStatePass)
+	}
+}
+
+func Test_SetupDependencyResolver_usesApprovedAirSanePin_whenCommitMissing(t *testing.T) {
+	// Given
+	request := setupDependencyRequest{
+		InstalledSamsungBackend: true,
+	}
+
+	// When
+	got := resolveSetupDependencies(request)
+
+	// Then
+	if got.State != setupStatePass {
+		t.Fatalf("resolver returned state %q, want %q", got.State, setupStatePass)
+	}
+	if got.AirSane.Source != setupSourcePinned {
+		t.Fatalf("resolver did not use approved AirSane pin by default: %+v", got.AirSane)
+	}
+	if got.AirSane.Commit != approvedAirSaneCommitForTest {
+		t.Fatalf("resolver default commit = %q, want %q", got.AirSane.Commit, approvedAirSaneCommitForTest)
 	}
 }
 
@@ -116,6 +139,12 @@ func Test_SetupDependencyResolver_blocksDriver_whenNoSafeSourceExists(t *testing
 	// Then
 	if got.State != setupStateBlockedDriverRequired {
 		t.Fatalf("resolver returned state %q, want %q", got.State, setupStateBlockedDriverRequired)
+	}
+	if got.AirSane.Source != setupSourcePinned {
+		t.Fatalf("resolver did not keep approved AirSane default while driver was blocked: %+v", got.AirSane)
+	}
+	if got.AirSane.Commit != approvedAirSaneCommitForTest {
+		t.Fatalf("resolver default commit = %q, want %q", got.AirSane.Commit, approvedAirSaneCommitForTest)
 	}
 	want := "BLOCKED_DRIVER_REQUIRED: Samsung scanner backend is not installed and no safe pinned or user-approved driver package metadata is configured; provide a trusted local .deb with --suldr-deb."
 	if got.Reason != want {

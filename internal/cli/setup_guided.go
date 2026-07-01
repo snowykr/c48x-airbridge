@@ -2,7 +2,6 @@ package cli
 
 import (
 	"os"
-	"strings"
 )
 
 const guidedSetupEvidencePath = "/var/log/c48x-airbridge/setup-evidence.json"
@@ -32,7 +31,7 @@ func runGuidedSetupFakeRunner(request setupRunnerRequest, fixture setupRunnerFix
 	if err := fixture.preload(root); err != nil {
 		return err
 	}
-	options := setupOptionsWithFixtureDefaults(request.options, fixture)
+	options := request.options
 	plan, err := buildGuidedSetupPlan(options, fixture, root)
 	if err != nil {
 		return err
@@ -67,13 +66,6 @@ func runGuidedSetupFakeRunner(request setupRunnerRequest, fixture setupRunnerFix
 		result:       result,
 		evidencePath: evidencePath,
 	})
-}
-
-func setupOptionsWithFixtureDefaults(options setupOptions, fixture setupRunnerFixture) setupOptions {
-	if options.AirSaneCommit == "" {
-		options.AirSaneCommit = strings.TrimSpace(fixture.ProbeOutputs["airsane.commit"])
-	}
-	return options
 }
 
 func buildGuidedSetupPlan(options setupOptions, fixture setupRunnerFixture, root string) (guidedSetupPlan, error) {

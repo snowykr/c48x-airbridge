@@ -62,7 +62,7 @@ func Test_SetupReal_runsGuidedPlanWithSafeRunner_whenApproved(t *testing.T) {
 	}
 }
 
-func Test_SetupReal_blocksBeforeMutation_whenAirSaneCommitIsMissing(t *testing.T) {
+func Test_SetupReal_usesApprovedAirSanePin_whenCommitIsMissing(t *testing.T) {
 	// Given
 	root := t.TempDir()
 	out := new(bytes.Buffer)
@@ -81,17 +81,27 @@ func Test_SetupReal_blocksBeforeMutation_whenAirSaneCommitIsMissing(t *testing.T
 
 	// Then
 	if err != nil {
-		t.Fatalf("real setup blocked path returned error: %v", err)
+		t.Fatalf("real setup returned error: %v", err)
 	}
 	got := out.String()
-	if !strings.Contains(got, "state: "+setupStateBlockedDriverRequired) {
-		t.Fatalf("real setup did not report blocked dependency:\n%s", got)
+	for _, want := range []string{
+		"state: " + setupStateBlockedClientProof,
+		"git -C /tmp/c48x-airbridge/airsane/source checkout --detach " + approvedAirSaneDefaultCommit,
+		"evidence bundle: /var/log/c48x-airbridge/setup-evidence.json",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("real setup output missing %q:\n%s", want, got)
+		}
 	}
 	if strings.Contains(got, "setup apply scaffold") || strings.Contains(got, "later guided installer workflow") {
-		t.Fatalf("real setup blocked path still used scaffold:\n%s", got)
+		t.Fatalf("real setup still used scaffold:\n%s", got)
 	}
-	if _, err := os.Stat(filepath.Join(root, "var", "log", "c48x-airbridge", "commands.log")); !os.IsNotExist(err) {
-		t.Fatalf("blocked real setup wrote command log before mutation: %v", err)
+	commandLog, err := os.ReadFile(filepath.Join(root, "var", "log", "c48x-airbridge", "commands.log"))
+	if err != nil {
+		t.Fatalf("read command log: %v", err)
+	}
+	if !strings.Contains(string(commandLog), "git -C /tmp/c48x-airbridge/airsane/source checkout --detach "+approvedAirSaneDefaultCommit) {
+		t.Fatalf("command log did not include default AirSane checkout:\n%s", string(commandLog))
 	}
 }
 

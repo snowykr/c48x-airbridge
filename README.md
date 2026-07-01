@@ -25,7 +25,9 @@ Korean documentation is available at [docs/README.ko.md](docs/README.ko.md).
 - NAPS2 on Windows for scanning
 - A trusted Samsung/SULDR scanner backend `.deb` if the host does not already
   have the Samsung `smfp` SANE backend
-- A pinned 40-character AirSane git commit when AirSane must be built
+- AirSane builds use the project-approved upstream pin by default:
+  `SimulPiscator/AirSane` tag `v0.4.12`, commit
+  `129cc3bf7258251a0a694dee7741285b59d88f9f`
 
 If the printer is powered off or the USB cable is disconnected, services may be
 running but print and scan jobs can still fail. Check power and USB first.
@@ -48,8 +50,7 @@ Preview the bootstrap/build command path without changing the host:
 Run the guided host setup:
 
 ```bash
-./scripts/bootstrap-setup.sh --yes \
-  --airsane-commit <40-character-AirSane-commit>
+./scripts/bootstrap-setup.sh --yes
 ```
 
 If setup reports `BLOCKED_DRIVER_REQUIRED` for the Samsung scanner backend,
@@ -57,9 +58,14 @@ rerun it with a trusted local Samsung/SULDR driver package:
 
 ```bash
 ./scripts/bootstrap-setup.sh --yes \
-  --suldr-deb /path/to/suld-driver2.deb \
-  --airsane-commit <40-character-AirSane-commit>
+  --suldr-deb /path/to/suld-driver2.deb
 ```
+
+AirSane source is not fetched from a floating branch or tag during normal
+setup. The default source is the approved upstream tag `v0.4.12` pinned to
+commit `129cc3bf7258251a0a694dee7741285b59d88f9f`. Advanced users may override
+that pin with `--airsane-commit <40-character-AirSane-commit>`; branch, tag, and
+`latest` values are rejected.
 
 The bootstrap script checks for Go/build tooling, builds the CLI without
 `sudo go run`, and then runs `c48x-airbridge setup`. If Go is missing, dry-run
@@ -78,8 +84,9 @@ named state instead of guessing:
 
 - `PASS`: selected host checks passed.
 - `BLOCKED_PRINTER_REQUIRED`: power on or connect the USB printer, then rerun.
-- `BLOCKED_DRIVER_REQUIRED`: provide a trusted Samsung/SULDR `.deb` or a pinned
-  AirSane commit, as requested by the output.
+- `BLOCKED_DRIVER_REQUIRED`: provide a trusted Samsung/SULDR `.deb` when the
+  Samsung scanner backend is missing, or replace an invalid AirSane override
+  with a 40-character commit if the output asks for it.
 - `BLOCKED_CLIENT_PROOF`: host setup is ready; finish macOS/Windows client
   print and scan checks.
 - `FAIL`: read the reason, fix the host issue, and rerun setup or verify.
@@ -179,23 +186,26 @@ curl http://<host>:8090/eSCL/ScannerStatus
 
 ### `BLOCKED_DRIVER_REQUIRED`
 
-The installer did not find a safe scanner backend or pinned AirSane source.
-Rerun setup with the exact option named in the output.
+The installer did not find a safe Samsung scanner backend, or an explicit
+AirSane override was not a 40-character commit. Rerun setup with the exact
+option named in the output.
 
 For the Samsung scanner backend:
 
 ```bash
 ./scripts/bootstrap-setup.sh --yes \
-  --suldr-deb /path/to/suld-driver2.deb \
-  --airsane-commit <40-character-AirSane-commit>
+  --suldr-deb /path/to/suld-driver2.deb
 ```
 
-For AirSane:
+For AirSane advanced override:
 
 ```bash
 ./scripts/bootstrap-setup.sh --yes \
   --airsane-commit <40-character-AirSane-commit>
 ```
+
+Normal setup does not require `--airsane-commit`; it uses the approved upstream
+pin `129cc3bf7258251a0a694dee7741285b59d88f9f`.
 
 ### Printing Works But Scanning Does Not
 

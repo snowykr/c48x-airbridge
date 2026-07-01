@@ -59,6 +59,10 @@ The setup command uses line-based prompts, supports non-interactive review with
 --dry-run, and keeps a review/apply boundary before any privileged host action.
 After approval it runs the guided Linux host setup workflow.
 
+AirSane builds use the project-approved upstream pin by default. Use
+--airsane-commit only for an advanced 40-character commit override; branch,
+tag, and latest source names are rejected.
+
 Completion states: PASS, BLOCKED_PRINTER_REQUIRED, BLOCKED_DRIVER_REQUIRED, BLOCKED_CLIENT_PROOF, FAIL.
 `),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -74,7 +78,7 @@ Completion states: PASS, BLOCKED_PRINTER_REQUIRED, BLOCKED_DRIVER_REQUIRED, BLOC
 	cmd.Flags().BoolVar(&options.NonInteractive, "no-input", false, "fail instead of prompting for setup decisions")
 	cmd.Flags().BoolVar(&options.Force, "force", false, "allow rebuilding or repairing setup steps that already appear present")
 	cmd.Flags().StringVar(&options.SULDRDeb, "suldr-deb", "", "path to a locally provided Samsung/SULDR driver .deb")
-	cmd.Flags().StringVar(&options.AirSaneCommit, "airsane-commit", "", "pinned AirSane git commit to use when AirSane installation is selected")
+	cmd.Flags().StringVar(&options.AirSaneCommit, "airsane-commit", "", "advanced override: 40-character AirSane git commit; default uses the approved project pin")
 	cmd.Flags().StringVar(&component, "component", string(setupComponentAll), "setup component: all, cups, scanner, airsane, or verify")
 	cmd.Flags().StringVar(&options.FakeRunner, "fake-runner", "", "test-only fake runner fixture")
 	if flag := cmd.Flags().Lookup("fake-runner"); flag != nil {

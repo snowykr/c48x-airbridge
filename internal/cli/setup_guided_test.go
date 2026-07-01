@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-const guidedAirSaneCommit = "0123456789abcdef0123456789abcdef01234567"
+const guidedAirSaneCommit = "129cc3bf7258251a0a694dee7741285b59d88f9f"
 
 func Test_SetupGuidedWorkflow_appliesAllComponentsAndWritesEvidence_whenYesApproved(t *testing.T) {
 	// Given

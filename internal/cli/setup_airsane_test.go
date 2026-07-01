@@ -9,9 +9,12 @@ import (
 	"testing"
 )
 
-const testAirSaneCommit = "0123456789abcdef0123456789abcdef01234567"
+const (
+	testAirSaneCommit            = "0123456789abcdef0123456789abcdef01234567"
+	approvedAirSaneDefaultCommit = "129cc3bf7258251a0a694dee7741285b59d88f9f"
+)
 
-func Test_AirSaneSetupPlan_rejectsUnpinnedSource_whenCommitMissing(t *testing.T) {
+func Test_AirSaneSetupPlan_usesApprovedPin_whenCommitMissing(t *testing.T) {
 	// Given
 	options := setupOptions{Component: setupComponentAirSane}
 
@@ -19,14 +22,20 @@ func Test_AirSaneSetupPlan_rejectsUnpinnedSource_whenCommitMissing(t *testing.T)
 	plan := buildAirSaneSetupPlan(options)
 
 	// Then
-	if plan.State != setupStateBlockedDriverRequired {
-		t.Fatalf("AirSane plan state = %q, want %q", plan.State, setupStateBlockedDriverRequired)
+	if plan.State != setupStatePass {
+		t.Fatalf("AirSane plan state = %q, want %q", plan.State, setupStatePass)
 	}
-	if !strings.Contains(plan.Reason, "40-character --airsane-commit") {
-		t.Fatalf("AirSane plan reason did not explain pinned commit requirement: %q", plan.Reason)
+	if len(plan.Steps) == 0 {
+		t.Fatal("AirSane default-pinned plan produced no steps")
 	}
-	if len(plan.Steps) != 0 {
-		t.Fatalf("AirSane unpinned plan produced %d steps, want 0", len(plan.Steps))
+	got := commandLinesForSteps(plan.Steps)
+	for _, want := range []string{
+		"git -C /tmp/c48x-airbridge/airsane/source fetch --tags origin " + approvedAirSaneDefaultCommit,
+		"git -C /tmp/c48x-airbridge/airsane/source checkout --detach " + approvedAirSaneDefaultCommit,
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("AirSane default-pinned plan missing %q:\n%s", want, got)
+		}
 	}
 }
 
@@ -114,7 +123,7 @@ func Test_AirSaneSetupPlan_returnsFailureGuidance_whenServiceMissing(t *testing.
 	}
 }
 
-func Test_SetupAirSaneFakeRunner_rejectsUnpinnedSource_whenCommitMissing(t *testing.T) {
+func Test_SetupAirSaneFakeRunner_appliesApprovedPin_whenCommitMissing(t *testing.T) {
 	// Given
 	out := new(bytes.Buffer)
 	errOut := new(bytes.Buffer)
@@ -128,12 +137,42 @@ func Test_SetupAirSaneFakeRunner_rejectsUnpinnedSource_whenCommitMissing(t *test
 
 	// Then
 	if err != nil {
-		t.Fatalf("AirSane unpinned fake-runner returned process error: %v", err)
+		t.Fatalf("AirSane default-pinned fake-runner returned process error: %v", err)
 	}
 	got := out.String()
-	for _, want := range []string{"state: BLOCKED_DRIVER_REQUIRED", "40-character --airsane-commit"} {
+	for _, want := range []string{
+		"state: PASS",
+		"git -C /tmp/c48x-airbridge/airsane/source checkout --detach " + approvedAirSaneDefaultCommit,
+	} {
 		if !strings.Contains(got, want) {
-			t.Fatalf("AirSane unpinned output missing %q:\n%s", want, got)
+			t.Fatalf("AirSane default-pinned output missing %q:\n%s", want, got)
+		}
+	}
+}
+
+func Test_SetupAirSaneFakeRunner_rejectsFloatingSource_whenCommitIsBranch(t *testing.T) {
+	// Given
+	out := new(bytes.Buffer)
+	errOut := new(bytes.Buffer)
+	cmd := NewCommand(Streams{Out: out, Err: errOut})
+	fixture := filepath.Join("..", "..", "testdata", "setup", "airsane-success.json")
+	cmd.SetArgs([]string{"setup", "--yes", "--component", "airsane", "--airsane-commit", "main", "--fake-runner", fixture})
+	t.Setenv("C48X_AIRBRIDGE_FAKE_ROOT", t.TempDir())
+
+	// When
+	err := cmd.ExecuteContext(context.Background())
+
+	// Then
+	if err != nil {
+		t.Fatalf("AirSane floating-source fake-runner returned process error: %v", err)
+	}
+	got := out.String()
+	for _, want := range []string{
+		"state: BLOCKED_DRIVER_REQUIRED",
+		"refusing floating AirSane source",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("AirSane floating-source output missing %q:\n%s", want, got)
 		}
 	}
 }
@@ -216,4 +255,16 @@ func airSaneExpectedCommandLines(commit string) []string {
 		"avahi-browse -rt _uscan._tcp",
 		"curl -fsS --max-time 2 http://localhost:8090/eSCL/ScannerStatus",
 	}
+}
+
+func commandLinesForSteps(steps []HostStep) string {
+	var lines []string
+	for _, step := range steps {
+		command, ok := step.(commandStep)
+		if !ok {
+			continue
+		}
+		lines = append(lines, command.command.DisplayLine())
+	}
+	return strings.Join(lines, "\n")
 }

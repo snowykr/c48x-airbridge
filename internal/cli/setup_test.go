@@ -88,6 +88,8 @@ func Test_SetupDryRun_printsReviewedPlanWithoutMutation_whenRequested(t *testing
 		"CUPS",
 		"SANE",
 		"AirSane",
+		"AirSane source: pinned",
+		"AirSane commit: " + approvedAirSaneDefaultCommit,
 		"BLOCKED_DRIVER_REQUIRED",
 		"BLOCKED_CLIENT_PROOF",
 	} {
