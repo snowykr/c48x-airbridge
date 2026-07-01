@@ -37,7 +37,7 @@ git clone https://github.com/snowykr/c48x-airbridge.git
 cd c48x-airbridge
 ```
 
-host를 변경하지 않고 설치 계획을 먼저 봅니다.
+host를 변경하지 않고 bootstrap/build 실행 경로를 먼저 봅니다.
 
 ```bash
 ./scripts/bootstrap-setup.sh --dry-run --no-input

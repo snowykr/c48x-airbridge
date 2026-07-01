@@ -2,25 +2,34 @@
   "name": "airsane-success",
   "command_log_path": "/var/log/c48x-airbridge/commands.log",
   "commands": {
-    "apt-get install -y git cmake g++ make pkg-config libsane-dev libjpeg-dev libpng-dev libavahi-client-dev libusb-1.0-0-dev curl avahi-utils": {
+    "apt-get install -y git cmake g++ make pkg-config libsane-dev libjpeg-dev libpng-dev libavahi-client-dev libusb-1.0-0-dev curl avahi-utils rsync": {
       "exit_code": 0
     },
-    "git clone --no-checkout https://github.com/SimulPiscator/AirSane.git /usr/local/src/AirSane": {
+    "rm -rf /tmp/c48x-airbridge/airsane": {
       "exit_code": 0
     },
-    "git -C /usr/local/src/AirSane fetch --tags origin 0123456789abcdef0123456789abcdef01234567": {
+    "mkdir -p /tmp/c48x-airbridge/airsane": {
       "exit_code": 0
     },
-    "git -C /usr/local/src/AirSane checkout --detach 0123456789abcdef0123456789abcdef01234567": {
+    "git clone --no-checkout https://github.com/SimulPiscator/AirSane.git /tmp/c48x-airbridge/airsane/source": {
       "exit_code": 0
     },
-    "cmake -S /usr/local/src/AirSane -B /usr/local/src/AirSane/build -DCMAKE_BUILD_TYPE=Release": {
+    "git -C /tmp/c48x-airbridge/airsane/source fetch --tags origin 0123456789abcdef0123456789abcdef01234567": {
       "exit_code": 0
     },
-    "cmake --build /usr/local/src/AirSane/build --parallel": {
+    "git -C /tmp/c48x-airbridge/airsane/source checkout --detach 0123456789abcdef0123456789abcdef01234567": {
       "exit_code": 0
     },
-    "cmake --install /usr/local/src/AirSane/build": {
+    "cmake -S /tmp/c48x-airbridge/airsane/source -B /tmp/c48x-airbridge/airsane/source/build -DCMAKE_BUILD_TYPE=Release": {
+      "exit_code": 0
+    },
+    "cmake --build /tmp/c48x-airbridge/airsane/source/build --parallel": {
+      "exit_code": 0
+    },
+    "cmake --install /tmp/c48x-airbridge/airsane/source/build --prefix /tmp/c48x-airbridge/airsane/stage/usr/local": {
+      "exit_code": 0
+    },
+    "rsync -a /tmp/c48x-airbridge/airsane/stage/usr/local/ /usr/local/": {
       "exit_code": 0
     },
     "systemctl enable --now airsaned.service": {

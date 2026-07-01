@@ -67,35 +67,6 @@ func evaluateLiveReport(report hostprobe.Report) verifyResult {
 	}
 }
 
-func firstIncompleteLiveCheck(report hostprobe.Report) (hostprobe.Result, bool) {
-	for _, check := range requiredLiveChecks() {
-		result, ok := findLiveResult(report, check)
-		if !ok {
-			return hostprobe.Result{Check: check, Name: string(check), Status: hostprobe.StatusWarn, Detail: "check missing from live probe report"}, true
-		}
-		if result.Status != hostprobe.StatusPass {
-			return result, true
-		}
-	}
-	return hostprobe.Result{}, false
-}
-
-func requiredLiveChecks() []hostprobe.CheckID {
-	return []hostprobe.CheckID{
-		hostprobe.CheckUSBDevice,
-		hostprobe.CheckCUPSQueue,
-		hostprobe.CheckIPPService,
-		hostprobe.CheckSANECurrentUser,
-		hostprobe.CheckSANERoot,
-		hostprobe.CheckSANESaned,
-		hostprobe.CheckSMFPConfig,
-		hostprobe.CheckSMFPBackend,
-		hostprobe.CheckAirSaneService,
-		hostprobe.CheckAirSaneHTTP,
-		hostprobe.CheckUSCANService,
-	}
-}
-
 func findLiveResult(report hostprobe.Report, check hostprobe.CheckID) (hostprobe.Result, bool) {
 	for _, result := range report.Results {
 		if result.Check == check {

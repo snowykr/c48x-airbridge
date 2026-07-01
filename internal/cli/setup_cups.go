@@ -15,22 +15,12 @@ type cupsSetupPlan struct {
 }
 
 func planCUPSSetup(fixture setupRunnerFixture) cupsSetupPlan {
-	deviceURI := samsungPrinterURI(fixture.ProbeOutputs["lpinfo -v"])
-	if deviceURI == "" {
-		return cupsSetupPlan{
-			State:  setupStateBlockedPrinterRequired,
-			Reason: "BLOCKED_PRINTER_REQUIRED: Samsung C48x/C480 USB printer was not found; connect or power on the printer, then rerun setup --yes --component cups.",
-		}
-	}
 	steps := []HostStep{
 		NewPrivilegedCommandStep("install CUPS and Avahi packages", "apt-get", "install", "-y", "cups", "cups-client", "avahi-daemon", "avahi-utils", "printer-driver-splix", "system-config-printer"),
 		NewPrivilegedCommandStep("enable CUPS", "systemctl", "enable", "--now", "cups"),
 		NewPrivilegedCommandStep("enable Avahi", "systemctl", "enable", "--now", "avahi-daemon"),
 		NewPrivilegedCommandStep("enable printer sharing", "cupsctl", "--share-printers", "--no-remote-admin", "--no-remote-any"),
-		NewCommandStep("discover USB printer", "lpinfo", "-v"),
-	}
-	if queueNeedsRepair(fixture.ProbeOutputs["lpstat -v "+cupsQueueName], deviceURI) {
-		steps = append(steps, NewPrivilegedCommandStep("create or repair CUPS queue", "lpadmin", "-p", cupsQueueName, "-E", "-v", deviceURI, "-m", cupsDriverModel))
+		NewCUPSQueueStep("create or repair CUPS queue", cupsQueueName, cupsDriverModel),
 	}
 	steps = append(steps,
 		NewCommandStep("verify CUPS queue", "lpstat", "-t"),

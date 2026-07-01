@@ -38,7 +38,8 @@ func Test_SetupGuidedWorkflow_appliesAllComponentsAndWritesEvidence_whenYesAppro
 		"evidence bundle: /var/log/c48x-airbridge/setup-evidence.json",
 		"sudo lpadmin -p C48X-Series",
 		"scanimage -L",
-		"sudo git -C /usr/local/src/AirSane checkout --detach " + guidedAirSaneCommit,
+		"git -C /tmp/c48x-airbridge/airsane/source checkout --detach " + guidedAirSaneCommit,
+		"sudo rsync -a /tmp/c48x-airbridge/airsane/stage/usr/local/ /usr/local/",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("guided setup output missing %q:\n%s", want, got)

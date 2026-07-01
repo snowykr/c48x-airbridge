@@ -69,6 +69,22 @@ func Test_AirSaneSetupPlan_installsConfigAndProofCommands_whenCommitPinned(t *te
 	}
 }
 
+func Test_AirSaneSetupPlan_runsDownloadedSourceWithoutPrivilege_whenCommitPinned(t *testing.T) {
+	// Given
+	plan := buildAirSaneSetupPlan(setupOptions{Component: setupComponentAirSane, AirSaneCommit: testAirSaneCommit})
+
+	// When / Then
+	for _, step := range plan.Steps {
+		command, ok := step.(commandStep)
+		if !ok {
+			continue
+		}
+		if (command.command.program == "git" || command.command.program == "cmake") && command.command.privileged {
+			t.Fatalf("downloaded AirSane source command runs as root: %s", command.command.DisplayLine())
+		}
+	}
+}
+
 func Test_AirSaneSetupPlan_returnsFailureGuidance_whenServiceMissing(t *testing.T) {
 	// Given
 	commands := airSaneSuccessCommands(testAirSaneCommit)
@@ -142,9 +158,10 @@ func Test_SetupAirSaneFakeRunner_appliesPinnedBuildAndConfig_whenCommitProvided(
 	got := out.String()
 	for _, want := range []string{
 		"state: PASS",
-		"sudo git clone --no-checkout",
-		"sudo git -C /usr/local/src/AirSane checkout --detach " + testAirSaneCommit,
-		"sudo cmake --install /usr/local/src/AirSane/build",
+		"git clone --no-checkout",
+		"git -C /tmp/c48x-airbridge/airsane/source checkout --detach " + testAirSaneCommit,
+		"cmake --install /tmp/c48x-airbridge/airsane/source/build --prefix /tmp/c48x-airbridge/airsane/stage/usr/local",
+		"sudo rsync -a /tmp/c48x-airbridge/airsane/stage/usr/local/ /usr/local/",
 		"avahi-browse -rt _uscan._tcp",
 		"curl -fsS --max-time 2 http://localhost:8090/eSCL/ScannerStatus",
 	} {
@@ -164,29 +181,35 @@ func Test_SetupAirSaneFakeRunner_appliesPinnedBuildAndConfig_whenCommitProvided(
 func airSaneSuccessCommands(commit string) map[string]FakeCommandResult {
 	return map[string]FakeCommandResult{
 		"apt-get install -y git cmake g++ make pkg-config libsane-dev libjpeg-dev libpng-dev libavahi-client-dev libusb-1.0-0-dev curl avahi-utils": {ExitCode: 0},
-		"git clone --no-checkout https://github.com/SimulPiscator/AirSane.git /usr/local/src/AirSane":                                               {ExitCode: 0},
-		"git -C /usr/local/src/AirSane fetch --tags origin " + commit:                                                                               {ExitCode: 0},
-		"git -C /usr/local/src/AirSane checkout --detach " + commit:                                                                                 {ExitCode: 0},
-		"cmake -S /usr/local/src/AirSane -B /usr/local/src/AirSane/build -DCMAKE_BUILD_TYPE=Release":                                                {ExitCode: 0},
-		"cmake --build /usr/local/src/AirSane/build --parallel":                                                                                     {ExitCode: 0},
-		"cmake --install /usr/local/src/AirSane/build":                                                                                              {ExitCode: 0},
-		"systemctl enable --now airsaned.service":                                                                                                   {ExitCode: 0},
-		"systemctl restart airsaned.service":                                                                                                        {ExitCode: 0},
-		"systemctl status airsaned.service --no-pager":                                                                                              {ExitCode: 0},
-		"avahi-browse -rt _uscan._tcp":                                                                                                              {ExitCode: 0, Stdout: "_uscan._tcp Samsung C480"},
-		"curl -fsS --max-time 2 http://localhost:8090/eSCL/ScannerStatus":                                                                           {ExitCode: 0, Stdout: "<ScannerStatus>Idle</ScannerStatus>"},
+		"rm -rf /tmp/c48x-airbridge/airsane":   {ExitCode: 0},
+		"mkdir -p /tmp/c48x-airbridge/airsane": {ExitCode: 0},
+		"git clone --no-checkout https://github.com/SimulPiscator/AirSane.git /tmp/c48x-airbridge/airsane/source":            {ExitCode: 0},
+		"git -C /tmp/c48x-airbridge/airsane/source fetch --tags origin " + commit:                                            {ExitCode: 0},
+		"git -C /tmp/c48x-airbridge/airsane/source checkout --detach " + commit:                                              {ExitCode: 0},
+		"cmake -S /tmp/c48x-airbridge/airsane/source -B /tmp/c48x-airbridge/airsane/source/build -DCMAKE_BUILD_TYPE=Release": {ExitCode: 0},
+		"cmake --build /tmp/c48x-airbridge/airsane/source/build --parallel":                                                  {ExitCode: 0},
+		"cmake --install /tmp/c48x-airbridge/airsane/source/build --prefix /tmp/c48x-airbridge/airsane/stage/usr/local":      {ExitCode: 0},
+		"rsync -a /tmp/c48x-airbridge/airsane/stage/usr/local/ /usr/local/":                                                  {ExitCode: 0},
+		"systemctl enable --now airsaned.service":                                                                            {ExitCode: 0},
+		"systemctl restart airsaned.service":                                                                                 {ExitCode: 0},
+		"systemctl status airsaned.service --no-pager":                                                                       {ExitCode: 0},
+		"avahi-browse -rt _uscan._tcp":                                                                                       {ExitCode: 0, Stdout: "_uscan._tcp Samsung C480"},
+		"curl -fsS --max-time 2 http://localhost:8090/eSCL/ScannerStatus":                                                    {ExitCode: 0, Stdout: "<ScannerStatus>Idle</ScannerStatus>"},
 	}
 }
 
 func airSaneExpectedCommandLines(commit string) []string {
 	return []string{
 		"sudo apt-get install -y git cmake g++ make pkg-config libsane-dev libjpeg-dev libpng-dev libavahi-client-dev libusb-1.0-0-dev curl avahi-utils",
-		"sudo git clone --no-checkout https://github.com/SimulPiscator/AirSane.git /usr/local/src/AirSane",
-		"sudo git -C /usr/local/src/AirSane fetch --tags origin " + commit,
-		"sudo git -C /usr/local/src/AirSane checkout --detach " + commit,
-		"sudo cmake -S /usr/local/src/AirSane -B /usr/local/src/AirSane/build -DCMAKE_BUILD_TYPE=Release",
-		"sudo cmake --build /usr/local/src/AirSane/build --parallel",
-		"sudo cmake --install /usr/local/src/AirSane/build",
+		"rm -rf /tmp/c48x-airbridge/airsane",
+		"mkdir -p /tmp/c48x-airbridge/airsane",
+		"git clone --no-checkout https://github.com/SimulPiscator/AirSane.git /tmp/c48x-airbridge/airsane/source",
+		"git -C /tmp/c48x-airbridge/airsane/source fetch --tags origin " + commit,
+		"git -C /tmp/c48x-airbridge/airsane/source checkout --detach " + commit,
+		"cmake -S /tmp/c48x-airbridge/airsane/source -B /tmp/c48x-airbridge/airsane/source/build -DCMAKE_BUILD_TYPE=Release",
+		"cmake --build /tmp/c48x-airbridge/airsane/source/build --parallel",
+		"cmake --install /tmp/c48x-airbridge/airsane/source/build --prefix /tmp/c48x-airbridge/airsane/stage/usr/local",
+		"sudo rsync -a /tmp/c48x-airbridge/airsane/stage/usr/local/ /usr/local/",
 		"sudo systemctl enable --now airsaned.service",
 		"sudo systemctl restart airsaned.service",
 		"systemctl status airsaned.service --no-pager",

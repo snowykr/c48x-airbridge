@@ -34,6 +34,7 @@ func (p Prober) cupsQueueResult(ctx context.Context) Result {
 
 func (p Prober) avahiResults(ctx context.Context) []Result {
 	return []Result{
+		serviceResult(ctx, p.runner, serviceSpec{commandProbe: commandProbe{check: CheckAvahiService, section: "CUPS", name: "Avahi service", passDetail: "service active", warnDetail: "service inactive or missing"}, service: "avahi-daemon"}),
 		p.avahiResult(ctx, avahiSpec{check: CheckIPPService, name: "IPP printer mDNS", service: "_ipp._tcp"}),
 		p.avahiResult(ctx, avahiSpec{check: CheckUSCANService, name: "AirScan/eSCL mDNS", service: "_uscan._tcp"}),
 	}

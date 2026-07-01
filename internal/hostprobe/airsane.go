@@ -4,7 +4,7 @@ import "context"
 
 func (p Prober) airSaneResults(ctx context.Context) []Result {
 	return []Result{
-		serviceResult(ctx, p.runner, serviceSpec{commandProbe: commandProbe{check: CheckAirSaneService, section: "AirSane", name: "AirSane service", passDetail: "service active", warnDetail: "service inactive or missing"}, service: "airsane"}),
+		serviceResult(ctx, p.runner, serviceSpec{commandProbe: commandProbe{check: CheckAirSaneService, section: "AirSane", name: "AirSane service", passDetail: "service active", warnDetail: "service inactive or missing"}, service: "airsaned"}),
 		p.airSaneHTTPResult(ctx),
 	}
 }

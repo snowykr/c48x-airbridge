@@ -21,6 +21,10 @@
     "lpadmin -p C48X-Series -E -v usb://Samsung/C48x%20Series?serial=Z9MJBAK -m drv:///splix-samsung.drv/samsung-c48x.ppd": {
       "exit_code": 0
     },
+    "lpstat -v C48X-Series": {
+      "exit_code": 0,
+      "stdout": "device for C48X-Series: usb://Other/Printer?serial=OLD\n"
+    },
     "lpstat -t": {
       "exit_code": 0,
       "stdout": "printer C48X-Series is idle\n"

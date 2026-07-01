@@ -28,6 +28,7 @@ const (
 	CheckSMFPBackend        CheckID = "sane.smfp_backend"
 	CheckCUPSService        CheckID = "cups.service"
 	CheckCUPSQueue          CheckID = "cups.queue"
+	CheckAvahiService       CheckID = "avahi.service"
 	CheckIPPService         CheckID = "avahi.ipp"
 	CheckUSCANService       CheckID = "avahi.uscan"
 	CheckAirSaneService     CheckID = "airsane.service"

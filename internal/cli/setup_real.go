@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 	"strings"
 
 	"c48x-airbridge/internal/hostprobe"
@@ -16,6 +17,8 @@ type setupRealRuntime struct {
 	root           string
 	commandRunner  CommandRunner
 	commandLogPath string
+	goos           string
+	goarch         string
 }
 
 func defaultSetupRealRuntime() setupRealRuntime {
@@ -23,11 +26,31 @@ func defaultSetupRealRuntime() setupRealRuntime {
 		root:           "/",
 		commandRunner:  OSCommandRunner{},
 		commandLogPath: "/var/log/c48x-airbridge/commands.log",
+		goos:           goruntime.GOOS,
+		goarch:         goruntime.GOARCH,
 	}
 }
 
 func runSetupReal(ctx context.Context, streams Streams, options setupOptions, runtime setupRealRuntime) error {
 	runtime = normalizeSetupRealRuntime(runtime)
+	preflight := setupRealPreflight(ctx, runtime)
+	if !preflight.pass {
+		fixture := setupRunnerFixture{Name: setupRealFixtureName, CommandLogPath: runtime.commandLogPath}
+		return printGuidedSetupResult(guidedSetupReport{
+			streams:  streams,
+			options:  options,
+			fixture:  fixture,
+			sections: []guidedSetupSection{{Name: "preflight", State: setupStateFail, Detail: preflight.reason}},
+			result: RunResult{
+				State:            setupStateFail,
+				Reason:           preflight.reason,
+				CommandLogPath:   runtime.commandLogPath,
+				RollbackGuidance: "no host changes were applied",
+				RetryGuidance:    preflight.retry,
+			},
+			evidencePath: "not written: blocked before host mutation",
+		})
+	}
 	fixture := setupRealFixture(ctx, runtime)
 	switch options.Component {
 	case setupComponentAll:
@@ -60,6 +83,12 @@ func normalizeSetupRealRuntime(runtime setupRealRuntime) setupRealRuntime {
 	if runtime.commandLogPath == "" {
 		runtime.commandLogPath = "/var/log/c48x-airbridge/commands.log"
 	}
+	if runtime.goos == "" {
+		runtime.goos = goruntime.GOOS
+	}
+	if runtime.goarch == "" {
+		runtime.goarch = goruntime.GOARCH
+	}
 	return runtime
 }
 
@@ -76,8 +105,24 @@ func setupRealFixture(ctx context.Context, runtime setupRealRuntime) setupRunner
 			"lpinfo -v":                  setupRealCommandOutput(ctx, runtime.commandRunner, "lpinfo", "-v"),
 			"lpstat -v " + cupsQueueName: setupRealCommandOutput(ctx, runtime.commandRunner, "lpstat", "-v", cupsQueueName),
 			"sane.smfp_backend":          backendState,
+			"saned.user":                 setupRealSanedUser(ctx, runtime.commandRunner),
 		},
 	}
+}
+
+func setupRealSanedUser(ctx context.Context, runner CommandRunner) string {
+	result, err := runner.Run(ctx, HostCommand{program: "id", args: []string{"saned"}})
+	if err != nil || result.ExitCode != 0 {
+		return "missing"
+	}
+	return "present"
+}
+
+func setupRealPlatformSupported(runtime setupRealRuntime) bool {
+	if runtime.goos != "linux" {
+		return false
+	}
+	return runtime.goarch == "amd64" || runtime.goarch == "arm64"
 }
 
 func setupRealCommandOutput(ctx context.Context, runner CommandRunner, program string, args ...string) string {

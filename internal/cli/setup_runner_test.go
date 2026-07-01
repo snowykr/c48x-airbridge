@@ -64,6 +64,56 @@ func Test_SafeHostRunner_WriteFileBacksUpAndIsIdempotent_whenRunTwice(t *testing
 	}
 }
 
+func Test_SafeHostRunner_UsesPrivilegedFileInstallAndLogAppend_whenRootIsHost(t *testing.T) {
+	// Given
+	recorder := &recordingCommandRunner{}
+	runner := NewSafeHostRunner(SafeHostRunnerConfig{
+		Root:           "/",
+		CommandRunner:  recorder,
+		CommandLogPath: "/var/log/c48x-airbridge/commands.log",
+	})
+	steps := []HostStep{
+		NewFileWriteStep("/etc/c48x-airbridge/test.conf", []byte("managed\n"), 0o644),
+		NewPrivilegedCommandStep("restart service", "systemctl", "restart", "airsaned.service"),
+	}
+
+	// When
+	result, err := runner.Run(context.Background(), steps)
+
+	// Then
+	if err != nil {
+		t.Fatalf("host-root runner failed before sudo-backed file writes: %v", err)
+	}
+	if result.State != runnerStatePass {
+		t.Fatalf("runner state = %q, want PASS", result.State)
+	}
+	if len(recorder.commands) < 3 {
+		t.Fatalf("recorded commands = %d, want log append, file install, service restart: %#v", len(recorder.commands), recorder.commands)
+	}
+	for _, command := range recorder.commands[:2] {
+		if !command.privileged || command.program != "sh" {
+			t.Fatalf("host-root file/log command was not sudo shell-backed: %#v", command)
+		}
+	}
+	if recorder.commands[len(recorder.commands)-1].CommandLine() != "systemctl restart airsaned.service" {
+		t.Fatalf("last command = %q, want service restart", recorder.commands[len(recorder.commands)-1].CommandLine())
+	}
+}
+
+type recordingCommandRunner struct {
+	commands []HostCommand
+}
+
+func (runner *recordingCommandRunner) Run(ctx context.Context, command HostCommand) (CommandResult, error) {
+	select {
+	case <-ctx.Done():
+		return CommandResult{}, ctx.Err()
+	default:
+	}
+	runner.commands = append(runner.commands, command)
+	return CommandResult{}, nil
+}
+
 func Test_SafeHostRunner_LogsTypedCommandsUnderFakeRoot_whenCommandsRun(t *testing.T) {
 	// Given
 	root := t.TempDir()

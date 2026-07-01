@@ -72,12 +72,16 @@ func (fixture setupRunnerFixture) scannerHostSteps(root string, resolution setup
 		NewPrivilegedCommandStep("reload udev scanner rules", "udevadm", "control", "--reload-rules"),
 		NewPrivilegedCommandStep("trigger udev scanner rules", "udevadm", "trigger"),
 		NewPrivilegedCommandStep("ensure scanner group", "groupadd", "-f", "scanner"),
-		NewPrivilegedCommandStep("add saned to scanner groups", "usermod", "-aG", "scanner,lp", "saned"),
 		NewFileWriteStep("/etc/sane.d/dll.conf", dllContent, 0o644),
 		NewCommandStep("verify scanner current user", "scanimage", "-L"),
 		NewCommandStep("verify scanner root", "sudo", "scanimage", "-L"),
-		NewCommandStep("verify scanner saned", "sudo", "-u", "saned", "scanimage", "-L"),
 	)
+	if fixture.sanedAvailable() {
+		steps = append(steps,
+			NewPrivilegedCommandStep("add saned to scanner groups", "usermod", "-aG", "scanner,lp", "saned"),
+			NewCommandStep("verify scanner saned", "sudo", "-u", "saned", "scanimage", "-L"),
+		)
+	}
 	return steps, nil
 }
 
@@ -89,6 +93,11 @@ func (fixture setupRunnerFixture) scannerBackendInstalled() bool {
 	default:
 		return true
 	}
+}
+
+func (fixture setupRunnerFixture) sanedAvailable() bool {
+	value := strings.TrimSpace(strings.ToLower(fixture.ProbeOutputs["saned.user"]))
+	return value != "missing" && value != "absent" && value != "not_found"
 }
 
 func scannerDLLConfContent(root string) ([]byte, error) {

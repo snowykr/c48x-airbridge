@@ -28,6 +28,10 @@
     "lpadmin -p C48X-Series -E -v usb://Samsung/C48x%20Series?serial=Z9MJBAK -m drv:///splix-samsung.drv/samsung-c48x.ppd": {
       "exit_code": 0
     },
+    "lpstat -v C48X-Series": {
+      "exit_code": 0,
+      "stdout": "device for C48X-Series: usb://Other/Printer?serial=OLD\n"
+    },
     "lpstat -t": {
       "exit_code": 0,
       "stdout": "printer C48X-Series is idle\n"
@@ -63,25 +67,34 @@
       "exit_code": 0,
       "stdout": "device `smfp:usb;04e8;342e' is a Samsung C48x Series\n"
     },
-    "apt-get install -y git cmake g++ make pkg-config libsane-dev libjpeg-dev libpng-dev libavahi-client-dev libusb-1.0-0-dev curl avahi-utils": {
+    "apt-get install -y git cmake g++ make pkg-config libsane-dev libjpeg-dev libpng-dev libavahi-client-dev libusb-1.0-0-dev curl avahi-utils rsync": {
       "exit_code": 0
     },
-    "git clone --no-checkout https://github.com/SimulPiscator/AirSane.git /usr/local/src/AirSane": {
+    "rm -rf /tmp/c48x-airbridge/airsane": {
       "exit_code": 0
     },
-    "git -C /usr/local/src/AirSane fetch --tags origin 0123456789abcdef0123456789abcdef01234567": {
+    "mkdir -p /tmp/c48x-airbridge/airsane": {
       "exit_code": 0
     },
-    "git -C /usr/local/src/AirSane checkout --detach 0123456789abcdef0123456789abcdef01234567": {
+    "git clone --no-checkout https://github.com/SimulPiscator/AirSane.git /tmp/c48x-airbridge/airsane/source": {
       "exit_code": 0
     },
-    "cmake -S /usr/local/src/AirSane -B /usr/local/src/AirSane/build -DCMAKE_BUILD_TYPE=Release": {
+    "git -C /tmp/c48x-airbridge/airsane/source fetch --tags origin 0123456789abcdef0123456789abcdef01234567": {
       "exit_code": 0
     },
-    "cmake --build /usr/local/src/AirSane/build --parallel": {
+    "git -C /tmp/c48x-airbridge/airsane/source checkout --detach 0123456789abcdef0123456789abcdef01234567": {
       "exit_code": 0
     },
-    "cmake --install /usr/local/src/AirSane/build": {
+    "cmake -S /tmp/c48x-airbridge/airsane/source -B /tmp/c48x-airbridge/airsane/source/build -DCMAKE_BUILD_TYPE=Release": {
+      "exit_code": 0
+    },
+    "cmake --build /tmp/c48x-airbridge/airsane/source/build --parallel": {
+      "exit_code": 0
+    },
+    "cmake --install /tmp/c48x-airbridge/airsane/source/build --prefix /tmp/c48x-airbridge/airsane/stage/usr/local": {
+      "exit_code": 0
+    },
+    "rsync -a /tmp/c48x-airbridge/airsane/stage/usr/local/ /usr/local/": {
       "exit_code": 0
     },
     "systemctl enable --now airsaned.service": {
@@ -105,6 +118,7 @@
   "probe_outputs": {
     "lpinfo -v": "direct usb://Samsung/C48x%20Series?serial=Z9MJBAK\n",
     "sane.smfp_backend": "/usr/lib/sane/libsane-smfp.so.1",
+    "saned.user": "present",
     "airsane.commit": "0123456789abcdef0123456789abcdef01234567"
   },
   "expected_writes": [

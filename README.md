@@ -39,7 +39,7 @@ git clone https://github.com/snowykr/c48x-airbridge.git
 cd c48x-airbridge
 ```
 
-Preview the host setup without changing the host:
+Preview the bootstrap/build command path without changing the host:
 
 ```bash
 ./scripts/bootstrap-setup.sh --dry-run --no-input

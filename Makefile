@@ -4,7 +4,7 @@ SCRIPTS := bin/c48x-airbridge scripts/common.sh scripts/diagnose.sh scripts/inst
 .PHONY: check syntax dry-run setup setup-dry-run help
 
 help:
-	@printf 'Targets:\n  check          Run syntax and setup dry-run checks\n  syntax         Run bash -n over scripts\n  dry-run        Alias for setup-dry-run\n  setup-dry-run  Preview guided setup without mutating host\n  setup          Run guided setup bootstrap\n'
+	@printf 'Targets:\n  check          Run syntax and bootstrap dry-run checks\n  syntax         Run bash -n over scripts\n  dry-run        Alias for setup-dry-run\n  setup-dry-run  Preview bootstrap/build path without mutating host\n  setup          Run guided setup bootstrap\n'
 
 check: syntax setup-dry-run
 

@@ -111,6 +111,33 @@ func Test_VerifyLive_blocksWithoutClientHandoff_whenAirSaneIsMissing(t *testing.
 	}
 }
 
+func Test_VerifyLive_allowsMissingSanedUser_whenCurrentAndRootSANEPass(t *testing.T) {
+	// Given
+	out := new(bytes.Buffer)
+	errOut := new(bytes.Buffer)
+	output := filepath.Join(t.TempDir(), "missing-saned.json")
+	report := readyProbeReport("")
+	replaceProbeResult(&report, hostprobe.Result{Check: hostprobe.CheckSANESaned, Section: "SANE", Name: "scanimage saned", Status: hostprobe.StatusWarn, Detail: "saned user not found"})
+	cmd := newVerifyCommandWithProbe(Streams{Out: out, Err: errOut}, staticVerifyProbe(report))
+	cmd.SetArgs([]string{"--live", "--output", output})
+
+	// When
+	err := cmd.ExecuteContext(context.Background())
+
+	// Then
+	if err != nil {
+		t.Fatalf("verify live missing saned user returned error: %v", err)
+	}
+	got := out.String()
+	if !strings.Contains(got, "state: "+setupStateBlockedClientProof) {
+		t.Fatalf("verify live treated optional saned account as required:\n%s", got)
+	}
+	bundle := readVerifyOutput(t, output)
+	if !strings.Contains(bundle, `"check": "sane.saned"`) || !strings.Contains(bundle, `"status": "WARN"`) {
+		t.Fatalf("verify evidence did not retain optional saned warning:\n%s", bundle)
+	}
+}
+
 func Test_VerifyFixture_preservesPendingManualEvidenceAndWritesOutput_whenLegacyFixtureIsUsed(t *testing.T) {
 	// Given
 	out := new(bytes.Buffer)
@@ -174,7 +201,9 @@ func readyProbeReport(path string) hostprobe.Report {
 		{Check: hostprobe.CheckOSRelease, Section: "Host", Name: "OS release", Status: hostprobe.StatusPass, Evidence: "Ubuntu 24.04 LTS"},
 		{Check: hostprobe.CheckArchitecture, Section: "Host", Name: "Architecture", Status: hostprobe.StatusPass, Evidence: "x86_64"},
 		{Check: hostprobe.CheckUSBDevice, Section: "USB", Name: "Samsung C48x USB device", Status: hostprobe.StatusPass, Detail: "candidate found", Evidence: "Bus 001 Device 004: ID 04e8:3469 Samsung C48x " + path},
+		{Check: hostprobe.CheckCUPSService, Section: "CUPS", Name: "CUPS service", Status: hostprobe.StatusPass, Detail: "service active"},
 		{Check: hostprobe.CheckCUPSQueue, Section: "CUPS", Name: "CUPS queue", Status: hostprobe.StatusPass, Detail: "printer queue visible", Evidence: "printer C48X-Series is idle"},
+		{Check: hostprobe.CheckAvahiService, Section: "CUPS", Name: "Avahi service", Status: hostprobe.StatusPass, Detail: "service active"},
 		{Check: hostprobe.CheckIPPService, Section: "CUPS", Name: "IPP printer mDNS", Status: hostprobe.StatusPass, Detail: "service advertised", Evidence: "_ipp._tcp Samsung C48x"},
 		{Check: hostprobe.CheckSANECurrentUser, Section: "SANE", Name: "scanimage current user", Status: hostprobe.StatusPass, Detail: "scanner visible"},
 		{Check: hostprobe.CheckSANERoot, Section: "SANE", Name: "scanimage root", Status: hostprobe.StatusPass, Detail: "scanner visible"},
@@ -189,15 +218,25 @@ func readyProbeReport(path string) hostprobe.Report {
 
 func missingPrinterProbeReport() hostprobe.Report {
 	report := readyProbeReport("")
-	report.Results[2] = hostprobe.Result{Check: hostprobe.CheckUSBDevice, Section: "USB", Name: "Samsung C48x USB device", Status: hostprobe.StatusBlocked, Detail: "connect or power on the C48x before scanner setup"}
+	replaceProbeResult(&report, hostprobe.Result{Check: hostprobe.CheckUSBDevice, Section: "USB", Name: "Samsung C48x USB device", Status: hostprobe.StatusBlocked, Detail: "connect or power on the C48x before scanner setup"})
 	return report
 }
 
 func missingAirSaneProbeReport() hostprobe.Report {
 	report := readyProbeReport("")
-	report.Results[11] = hostprobe.Result{Check: hostprobe.CheckAirSaneHTTP, Section: "AirSane", Name: "AirSane HTTP", Status: hostprobe.StatusWarn, Detail: "HTTP endpoint unavailable"}
-	report.Results[12] = hostprobe.Result{Check: hostprobe.CheckUSCANService, Section: "AirSane", Name: "AirScan/eSCL mDNS", Status: hostprobe.StatusWarn, Detail: "service missing"}
+	replaceProbeResult(&report, hostprobe.Result{Check: hostprobe.CheckAirSaneHTTP, Section: "AirSane", Name: "AirSane HTTP", Status: hostprobe.StatusWarn, Detail: "HTTP endpoint unavailable"})
+	replaceProbeResult(&report, hostprobe.Result{Check: hostprobe.CheckUSCANService, Section: "AirSane", Name: "AirScan/eSCL mDNS", Status: hostprobe.StatusWarn, Detail: "service missing"})
 	return report
+}
+
+func replaceProbeResult(report *hostprobe.Report, replacement hostprobe.Result) {
+	for index, result := range report.Results {
+		if result.Check == replacement.Check {
+			report.Results[index] = replacement
+			return
+		}
+	}
+	report.Results = append(report.Results, replacement)
 }
 
 type staticVerifyProbe hostprobe.Report
