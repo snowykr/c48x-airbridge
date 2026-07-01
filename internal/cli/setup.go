@@ -57,7 +57,7 @@ Guide Linux host setup for the Samsung C48x bridge.
 
 The setup command uses line-based prompts, supports non-interactive review with
 --dry-run, and keeps a review/apply boundary before any privileged host action.
-This contract scaffold does not mutate the host yet.
+After approval it runs the guided Linux host setup workflow.
 
 Completion states: PASS, BLOCKED_PRINTER_REQUIRED, BLOCKED_DRIVER_REQUIRED, BLOCKED_CLIENT_PROOF, FAIL.
 `),
@@ -147,8 +147,7 @@ func runSetup(cmd *cobra.Command, streams Streams, options setupOptions) error {
 	if options.FakeRunner != "" {
 		return runSetupFakeRunner(cmd.Context(), streams, options)
 	}
-	_, err := fmt.Fprintln(streams.Out, strings.Join(setupApplyScaffold(options), "\n"))
-	return err
+	return runSetupReal(cmd.Context(), streams, options, defaultSetupRealRuntime())
 }
 
 func promptForSetupApproval(cmd *cobra.Command, streams Streams, options setupOptions) error {
@@ -196,20 +195,6 @@ func setupPlan(options setupOptions) []string {
 	if options.FakeRunner != "" {
 		lines = append(lines, "fake runner fixture: "+options.FakeRunner)
 	}
-	return lines
-}
-
-func setupApplyScaffold(options setupOptions) []string {
-	lines := setupPlan(options)
-	resolution := resolveSetupDependencies(newSetupDependencyRequest(options))
-	lines[0] = "setup apply scaffold:"
-	if resolution.State == setupStateBlockedDriverRequired {
-		lines = append(lines, "state: "+setupStateBlockedDriverRequired)
-		lines = append(lines, "reason: "+resolution.Reason)
-		return lines
-	}
-	lines = append(lines, "state: "+setupStateBlockedDriverRequired)
-	lines = append(lines, "reason: setup host mutation is reserved for the later guided installer workflow")
 	return lines
 }
 
