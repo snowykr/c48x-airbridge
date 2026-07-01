@@ -172,6 +172,7 @@ func setupPlan(options setupOptions) []string {
 		"- verify: plan CUPS, SANE, AirSane, mDNS, reboot persistence, and client-proof handoff checks",
 		"states: " + strings.Join(setupStates(), ", "),
 	}
+	lines = append(lines, setupDependencyPlanLines(options)...)
 	if options.Force {
 		lines = append(lines, "force: enabled for repair/rebuild candidates")
 	}
@@ -189,7 +190,13 @@ func setupPlan(options setupOptions) []string {
 
 func setupApplyScaffold(options setupOptions) []string {
 	lines := setupPlan(options)
+	resolution := resolveSetupDependencies(newSetupDependencyRequest(options))
 	lines[0] = "setup apply scaffold:"
+	if resolution.State == setupStateBlockedDriverRequired {
+		lines = append(lines, "state: "+setupStateBlockedDriverRequired)
+		lines = append(lines, "reason: "+resolution.Reason)
+		return lines
+	}
 	lines = append(lines, "state: "+setupStateBlockedDriverRequired)
 	lines = append(lines, "reason: setup host mutation is reserved for the later guided installer workflow")
 	return lines
