@@ -57,7 +57,7 @@ The setup command uses line-based prompts, supports non-interactive review with
 --dry-run, and keeps a review/apply boundary before any privileged host action.
 This contract scaffold does not mutate the host yet.
 
-Completion states: PASS, BLOCKED_DRIVER_REQUIRED, BLOCKED_CLIENT_PROOF, FAIL.
+Completion states: PASS, BLOCKED_PRINTER_REQUIRED, BLOCKED_DRIVER_REQUIRED, BLOCKED_CLIENT_PROOF, FAIL.
 `),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			parsed, err := parseSetupOptions(options, component)
@@ -208,6 +208,7 @@ func setupApplyScaffold(options setupOptions) []string {
 func setupStates() []string {
 	return []string{
 		setupStatePass,
+		setupStateBlockedPrinterRequired,
 		setupStateBlockedDriverRequired,
 		setupStateBlockedClientProof,
 		setupStateFail,

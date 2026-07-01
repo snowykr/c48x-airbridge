@@ -41,10 +41,20 @@ type setupFixtureStep struct {
 	Mode    uint32   `json:"mode"`
 }
 
+type setupRunnerRequest struct {
+	ctx     context.Context
+	streams Streams
+	options setupOptions
+}
+
 func runSetupFakeRunner(ctx context.Context, streams Streams, options setupOptions) error {
+	request := setupRunnerRequest{ctx: ctx, streams: streams, options: options}
 	fixture, err := loadSetupRunnerFixture(options.FakeRunner)
 	if err != nil {
 		return err
+	}
+	if options.Component == setupComponentCUPS && len(fixture.Steps) == 0 {
+		return runCUPSSetupFakeRunner(request, fixture)
 	}
 	if options.Component == setupComponentAirSane && len(fixture.Steps) == 0 {
 		return runAirSaneSetupFakeRunner(ctx, streams, options, fixture)
@@ -95,6 +105,38 @@ func runAirSaneSetupFakeRunner(ctx context.Context, streams Streams, options set
 		result.Reason = err.Error()
 	}
 	return printSetupRunnerResult(streams, options, fixture, result)
+}
+
+func runCUPSSetupFakeRunner(request setupRunnerRequest, fixture setupRunnerFixture) error {
+	root := os.Getenv("C48X_AIRBRIDGE_FAKE_ROOT")
+	if err := fixture.preload(root); err != nil {
+		return err
+	}
+	plan := planCUPSSetup(fixture)
+	if plan.State != setupStatePass {
+		result := RunResult{
+			State:            plan.State,
+			Reason:           plan.Reason,
+			CommandLogPath:   fixture.CommandLogPath,
+			RollbackGuidance: "no CUPS queue changes were applied",
+			RetryGuidance:    "connect or power on the Samsung C48x/C480 USB printer, then rerun setup --yes --component cups",
+		}
+		return printSetupRunnerResult(request.streams, request.options, fixture, result)
+	}
+	runner := NewSafeHostRunner(SafeHostRunnerConfig{
+		Root:           root,
+		CommandRunner:  NewFakeCommandRunner(fixture.Commands),
+		CommandLogPath: fixture.CommandLogPath,
+	})
+	result, err := runner.Run(request.ctx, plan.Steps)
+	if err != nil {
+		return err
+	}
+	if err := fixture.verifyExpectedWrites(root); err != nil {
+		result.State = setupStateFail
+		result.Reason = err.Error()
+	}
+	return printSetupRunnerResult(request.streams, request.options, fixture, result)
 }
 
 func loadSetupRunnerFixture(path string) (setupRunnerFixture, error) {

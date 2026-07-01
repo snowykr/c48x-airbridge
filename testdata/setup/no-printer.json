@@ -1,0 +1,8 @@
+{
+  "name": "no-printer",
+  "command_log_path": "/var/log/c48x-airbridge/commands.log",
+  "commands": {},
+  "probe_outputs": {
+    "lpinfo -v": "network ipp://printer.example.test/ipp/print\n"
+  }
+}

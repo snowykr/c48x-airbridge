@@ -1,0 +1,36 @@
+{
+  "name": "cups-success",
+  "command_log_path": "/var/log/c48x-airbridge/commands.log",
+  "commands": {
+    "apt-get install -y cups cups-client avahi-daemon avahi-utils printer-driver-splix system-config-printer": {
+      "exit_code": 0
+    },
+    "systemctl enable --now cups": {
+      "exit_code": 0
+    },
+    "systemctl enable --now avahi-daemon": {
+      "exit_code": 0
+    },
+    "cupsctl --share-printers --no-remote-admin --no-remote-any": {
+      "exit_code": 0
+    },
+    "lpinfo -v": {
+      "exit_code": 0,
+      "stdout": "direct usb://Samsung/C48x%20Series?serial=Z9MJBAK\n"
+    },
+    "lpadmin -p C48X-Series -E -v usb://Samsung/C48x%20Series?serial=Z9MJBAK -m drv:///splix-samsung.drv/samsung-c48x.ppd": {
+      "exit_code": 0
+    },
+    "lpstat -t": {
+      "exit_code": 0,
+      "stdout": "printer C48X-Series is idle\n"
+    },
+    "avahi-browse -rt _ipp._tcp": {
+      "exit_code": 0,
+      "stdout": "+ eth0 IPv4 Samsung C48x Series @ host Internet Printer local\n"
+    }
+  },
+  "probe_outputs": {
+    "lpinfo -v": "direct usb://Samsung/C48x%20Series?serial=Z9MJBAK\n"
+  }
+}
