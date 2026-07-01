@@ -3,136 +3,105 @@
 Use a Samsung C48x/C480 USB multifunction printer from macOS and Windows
 through an Ubuntu home server.
 
-The verified setup is:
+The supported topology is:
 
 - Linux host: Samsung C48x/C480 connected over USB
-- Printing: CUPS with Avahi/Bonjour discovery
+- Printing: CUPS shared over IPP with Avahi/Bonjour discovery
 - Scanning: SANE Samsung backend exposed through AirSane eSCL/AirScan
-- macOS: built-in printer setup and Image Capture or Preview for scanning
-- Windows: built-in network printing and NAPS2 with the `ESCL Driver` for
-  scanning
+- macOS: built-in printer setup plus Image Capture or Preview for scanning
+- Windows: built-in network printing plus NAPS2 with the `ESCL Driver`
 
 Windows scanning intentionally uses NAPS2 over eSCL. The Windows built-in Scan
 app may not discover this AirSane scanner, and the Samsung Universal Scan Driver
-is for a scanner connected directly to the Windows PC over USB. That is not this
-topology.
+is for scanners connected directly to the Windows PC over USB.
 
 Korean documentation is available at [docs/README.ko.md](docs/README.ko.md).
 
 ## Requirements
 
-- Ubuntu or Debian-based Linux host
+- Ubuntu or Debian-based Linux host with `sudo`
 - Samsung C48x/C480 series USB multifunction printer
 - macOS and/or Windows clients on the same LAN
-- A Linux account with `sudo`
 - NAPS2 on Windows for scanning
+- A trusted Samsung/SULDR scanner backend `.deb` if the host does not already
+  have the Samsung `smfp` SANE backend
+- A pinned 40-character AirSane git commit when AirSane must be built
 
-If the printer is powered off or the USB cable is disconnected, CUPS and AirSane
-may still be running, but printing and scanning will fail. Check power and USB
-before debugging the network path.
+If the printer is powered off or the USB cable is disconnected, services may be
+running but print and scan jobs can still fail. Check power and USB first.
 
-## Clone The Repository
+## Quick Start
+
+Clone the repository on the Linux host:
 
 ```bash
 git clone https://github.com/snowykr/c48x-airbridge.git
 cd c48x-airbridge
 ```
 
-The repository includes a small Go CLI for non-mutating checks.
+Preview the host setup without changing the host:
 
 ```bash
-./bin/c48x-airbridge help
+./scripts/bootstrap-setup.sh --dry-run --no-input
+```
+
+Run the guided host setup:
+
+```bash
+./scripts/bootstrap-setup.sh --yes \
+  --airsane-commit <40-character-AirSane-commit>
+```
+
+If setup reports `BLOCKED_DRIVER_REQUIRED` for the Samsung scanner backend,
+rerun it with a trusted local Samsung/SULDR driver package:
+
+```bash
+./scripts/bootstrap-setup.sh --yes \
+  --suldr-deb /path/to/suld-driver2.deb \
+  --airsane-commit <40-character-AirSane-commit>
+```
+
+The bootstrap script checks for Go/build tooling, builds the CLI without
+`sudo go run`, and then runs `c48x-airbridge setup`. If Go is missing, dry-run
+and no-input modes print the exact `apt-get` command instead of changing the
+host.
+
+You can use Make targets for the same entrypoints:
+
+```bash
+make setup-dry-run
+make setup
+```
+
+`setup` keeps a review/apply boundary before privileged work. It stops with a
+named state instead of guessing:
+
+- `PASS`: selected host checks passed.
+- `BLOCKED_PRINTER_REQUIRED`: power on or connect the USB printer, then rerun.
+- `BLOCKED_DRIVER_REQUIRED`: provide a trusted Samsung/SULDR `.deb` or a pinned
+  AirSane commit, as requested by the output.
+- `BLOCKED_CLIENT_PROOF`: host setup is ready; finish macOS/Windows client
+  print and scan checks.
+- `FAIL`: read the reason, fix the host issue, and rerun setup or verify.
+
+## Verify The Host
+
+Run a non-mutating diagnostic summary:
+
+```bash
 ./bin/c48x-airbridge diagnose
-./bin/c48x-airbridge install --dry-run
 ```
 
-`install --dry-run` does not change the host. Use the scripts below when you are
-ready to apply each host setup step.
-
-## Linux Host Setup
-
-### 1. Confirm USB Detection
-
-Turn on the printer, connect it to the Linux host over USB, then run:
+Write a structured host verification bundle:
 
 ```bash
-lsusb | grep -i samsung
+./bin/c48x-airbridge verify --live --output ./host-verify.json
 ```
 
-Continue only after the Samsung device appears.
+When host checks pass, `verify` prints the macOS and Windows client handoff. The
+client steps are manual because they happen on those devices.
 
-### 2. Install CUPS And Avahi Printing
-
-```bash
-sudo ./scripts/install-cups.sh
-```
-
-This installs CUPS, Avahi, and related printer tools. It enables printer sharing
-only. It does not enable remote CUPS administration or unrestricted remote
-access.
-
-After installation, add the USB printer queue in CUPS.
-
-```bash
-lpinfo -v
-lpstat -t
-```
-
-If needed, open CUPS locally on the host:
-
-```text
-http://localhost:631/
-```
-
-Add the Samsung C48x/C480 USB printer, then print a test page.
-
-### 3. Prepare SANE And The Samsung Scanner Backend
-
-```bash
-sudo ./scripts/install-sane-samsung.sh
-```
-
-This installs SANE and USB support packages, installs the Samsung USB scanner
-udev rule, and gives `saned` scanner access through the `scanner` and `lp`
-groups.
-
-Some C48x/C480 scanners need the Samsung `smfp` backend from a trusted SULDR or
-ULD package. If the scanner does not appear after this script, install the
-trusted Samsung/SULDR package for your host and check again.
-
-Verify local scanner visibility through each account path:
-
-```bash
-scanimage -L
-sudo scanimage -L
-sudo -u saned scanimage -L
-```
-
-For AirSane, the `saned` check should see the same scanner.
-
-### 4. Install AirSane
-
-The AirSane script refuses to clone, build, or install by default. Pin the
-upstream AirSane commit and explicitly opt in before installing on the host.
-
-```bash
-sudo AIRSANE_ALLOW_HOST_INSTALL=1 \
-  AIRSANE_COMMIT=<40-character-git-commit> \
-  ./scripts/install-airsane.sh
-```
-
-Verify AirSane after installation:
-
-```bash
-systemctl status airsaned --no-pager
-avahi-browse -rt _uscan._tcp
-curl -f http://localhost:8090/
-```
-
-When `_uscan._tcp` is advertised and the HTTP endpoint responds, LAN clients can
-discover the scanner through eSCL/AirScan.
-
-## macOS Usage
+## macOS Client Setup
 
 ### Printing
 
@@ -144,13 +113,12 @@ discover the scanner through eSCL/AirScan.
 ### Scanning
 
 1. Open Image Capture or Preview.
-2. Select the Samsung C48x scanner shown through AirSane/AirScan.
+2. Select the Samsung C48x scanner advertised by AirSane/AirScan.
 3. Preview or scan a page.
 
-The verified macOS path uses the built-in printer setup and built-in scanning
-apps.
+macOS uses its built-in print and scan apps in this topology.
 
-## Windows Usage
+## Windows Client Setup
 
 ### Printing
 
@@ -159,8 +127,6 @@ apps.
 3. Add the network printer shown as `Samsung C48x Series @ <host>` or a similar
    host-named printer.
 4. Print a test page.
-
-Windows printing uses the built-in network printer path.
 
 ### Scanning
 
@@ -173,34 +139,17 @@ Use NAPS2 with its eSCL driver.
 5. Choose source, page size, resolution, and color settings.
 6. Run Scan.
 
-It is normal if the Windows built-in Scan app does not show the scanner in this
-setup. The scanner is attached to the Linux host, not directly to the Windows PC
-over USB.
+It is normal if the Windows built-in Scan app does not show the scanner. The
+scanner is attached to the Linux host, not directly to the Windows PC over USB.
 
-## Routine Checks
-
-Check printing on the Linux host:
+## Useful Commands
 
 ```bash
-lpstat -t
-lpinfo -v
-avahi-browse -rt _ipp._tcp
-```
-
-Check scanning on the Linux host:
-
-```bash
-scanimage -L
-sudo -u saned scanimage -L
-systemctl status airsaned --no-pager
-avahi-browse -rt _uscan._tcp
-curl -f http://localhost:8090/
-```
-
-Run the repository's non-mutating CLI check:
-
-```bash
-./bin/c48x-airbridge diagnose
+./bin/c48x-airbridge help
+./bin/c48x-airbridge setup --help
+./bin/c48x-airbridge setup --dry-run
+./bin/c48x-airbridge verify --live --output ./host-verify.json
+make check
 ```
 
 ## Troubleshooting
@@ -226,24 +175,26 @@ avahi-browse -rt _uscan._tcp
 curl http://<host>:8090/eSCL/ScannerStatus
 ```
 
-- On Windows, use a NAPS2 profile with `ESCL Driver` instead of the built-in
-  Scan app.
+- On Windows, use a NAPS2 profile with `ESCL Driver`.
 
-### Scanning Does Not Start Or Hangs
+### `BLOCKED_DRIVER_REQUIRED`
 
-- Check the printer panel for sleep mode, cover, paper, or device errors.
-- Confirm that local scanning works on the Linux host:
+The installer did not find a safe scanner backend or pinned AirSane source.
+Rerun setup with the exact option named in the output.
+
+For the Samsung scanner backend:
 
 ```bash
-scanimage -L
-scanimage --format=png --output-file=/tmp/c48x-test.png
+./scripts/bootstrap-setup.sh --yes \
+  --suldr-deb /path/to/suld-driver2.deb \
+  --airsane-commit <40-character-AirSane-commit>
 ```
 
-- Restart AirSane:
+For AirSane:
 
 ```bash
-sudo systemctl restart airsaned
-systemctl status airsaned --no-pager
+./scripts/bootstrap-setup.sh --yes \
+  --airsane-commit <40-character-AirSane-commit>
 ```
 
 ### Printing Works But Scanning Does Not
@@ -252,22 +203,35 @@ Printing and scanning use different host paths. Printing success does not prove
 that SANE or AirSane is working.
 
 ```bash
+scanimage -L
 sudo -u saned scanimage -L
-curl -f http://localhost:8090/
+curl -f http://localhost:8090/eSCL/ScannerStatus
 avahi-browse -rt _uscan._tcp
 ```
 
-Check these before debugging the client app.
+### Manual Fallback
+
+Use the scripts below only for troubleshooting or targeted repair after the
+guided setup output tells you which component is blocked:
+
+```bash
+sudo ./scripts/install-cups.sh
+sudo ./scripts/install-sane-samsung.sh
+sudo AIRSANE_ALLOW_HOST_INSTALL=1 \
+  AIRSANE_COMMIT=<40-character-AirSane-commit> \
+  ./scripts/install-airsane.sh
+```
 
 ## Repository Layout
 
 - `bin/c48x-airbridge`: CLI entrypoint
 - `cmd/c48x-airbridge/`: Go CLI main package
 - `internal/cli/`: CLI command implementation
-- `scripts/install-cups.sh`: CUPS and Avahi print sharing setup
-- `scripts/install-sane-samsung.sh`: SANE and Samsung scanner backend setup
-- `scripts/install-airsane.sh`: pinned AirSane build/install helper
-- `scripts/diagnose.sh`: non-mutating host diagnostics
+- `scripts/bootstrap-setup.sh`: one-command host setup entrypoint
+- `scripts/install-cups.sh`: CUPS/Avahi repair helper
+- `scripts/install-sane-samsung.sh`: SANE/Samsung scanner backend repair helper
+- `scripts/install-airsane.sh`: pinned AirSane build/install repair helper
+- `scripts/diagnose.sh`: legacy non-mutating host diagnostics
 - `configs/udev/99-samsung-c480-scanner.rules`: Samsung USB scanner permission rule
 - `configs/airsane/access.conf.example`: AirSane access control example
 - `docs/README.ko.md`: Korean README

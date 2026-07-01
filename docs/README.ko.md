@@ -1,205 +1,161 @@
 # c48x-airbridge
 
 Samsung C48x/C480 계열 USB 복합기를 Ubuntu 홈서버에 연결해, 같은 LAN의
-macOS와 Windows에서 프린터와 스캐너로 쓰기 위한 host-native 운영 가이드입니다.
+macOS와 Windows에서 프린터와 스캐너로 쓰기 위한 프로젝트입니다.
 
-현재 검증된 최종 구성은 다음과 같습니다.
+지원하는 구성은 다음과 같습니다.
 
-- Linux host: USB로 복합기 연결
-- Print: CUPS + Avahi/Bonjour 공유
-- Scan: SANE Samsung backend + AirSane eSCL/AirScan 공유
-- macOS: 기본 프린터 추가, Image Capture/Preview 스캔
-- Windows: 기본 네트워크 프린터 추가, NAPS2의 `ESCL Driver`로 스캔
+- Linux host: Samsung C48x/C480 복합기를 USB로 연결
+- Print: CUPS를 IPP로 공유하고 Avahi/Bonjour로 검색
+- Scan: SANE Samsung backend를 AirSane eSCL/AirScan으로 공유
+- macOS: 기본 프린터 추가, Image Capture 또는 Preview 스캔
+- Windows: 기본 네트워크 프린터 추가, NAPS2의 `ESCL Driver` 스캔
 
-Windows 기본 스캔 앱이 아니라 NAPS2 eSCL 경로를 표준 스캔 경로로 둡니다. 이
-장비가 Linux host에 USB로 연결된 상태에서는 Samsung Universal Scan Driver 같은
-Windows 로컬 USB 스캔 드라이버를 쓰는 경로가 아닙니다.
+Windows 스캔은 NAPS2 eSCL 경로를 표준으로 둡니다. Windows 기본 Scan 앱은 이
+AirSane 스캐너를 찾지 못할 수 있습니다. Samsung Universal Scan Driver는 Windows
+PC에 USB로 직접 연결된 스캐너용입니다.
 
 ## 준비물
 
-- Ubuntu/Debian 계열 Linux host
+- `sudo`를 사용할 수 있는 Ubuntu/Debian 계열 Linux host
 - Samsung C48x/C480 계열 USB 복합기
 - 같은 LAN에 있는 macOS/Windows 클라이언트
-- host에서 `sudo` 가능한 계정
 - Windows 스캔용 NAPS2
+- host에 Samsung `smfp` SANE backend가 없다면 신뢰할 수 있는 Samsung/SULDR
+  scanner backend `.deb`
+- AirSane을 빌드해야 한다면 40자 AirSane git commit 해시
 
-프린터 전원이 꺼져 있거나 USB가 빠져 있으면 CUPS/AirSane 서비스는 살아 있어도
-실제 인쇄와 스캔은 실패할 수 있습니다. 점검할 때는 먼저 복합기 전원과 USB 연결을
-확인하세요.
+프린터 전원이 꺼져 있거나 USB가 빠져 있으면 서비스가 떠 있어도 실제 인쇄와
+스캔은 실패할 수 있습니다. 먼저 전원과 USB 연결을 확인하세요.
 
-## 저장소 받기
+## 빠른 시작
+
+Linux host에서 저장소를 받습니다.
 
 ```bash
 git clone https://github.com/snowykr/c48x-airbridge.git
 cd c48x-airbridge
 ```
 
-비파괴 점검용 CLI는 Go로 작성되어 있습니다.
+host를 변경하지 않고 설치 계획을 먼저 봅니다.
+
+```bash
+./scripts/bootstrap-setup.sh --dry-run --no-input
+```
+
+guided host setup을 실행합니다.
+
+```bash
+./scripts/bootstrap-setup.sh --yes \
+  --airsane-commit <40-character-AirSane-commit>
+```
+
+Samsung scanner backend 때문에 `BLOCKED_DRIVER_REQUIRED`가 나오면, 신뢰할 수
+있는 로컬 Samsung/SULDR driver package를 지정해서 다시 실행합니다.
+
+```bash
+./scripts/bootstrap-setup.sh --yes \
+  --suldr-deb /path/to/suld-driver2.deb \
+  --airsane-commit <40-character-AirSane-commit>
+```
+
+bootstrap script는 Go/build tooling을 확인하고, `sudo go run` 없이 CLI를 빌드한
+뒤 `c48x-airbridge setup`을 실행합니다. Go가 없을 때 dry-run/no-input 모드는
+host를 바꾸지 않고 필요한 `apt-get` 명령을 그대로 출력합니다.
+
+Make target으로도 같은 진입점을 사용할 수 있습니다.
+
+```bash
+make setup-dry-run
+make setup
+```
+
+`setup`은 privileged 작업 전에 review/apply 경계를 둡니다. 실패를 추측하지 않고
+아래 상태 중 하나로 멈춥니다.
+
+- `PASS`: 선택한 host check가 통과했습니다.
+- `BLOCKED_PRINTER_REQUIRED`: 프린터 전원이나 USB 연결을 확인하고 다시 실행합니다.
+- `BLOCKED_DRIVER_REQUIRED`: 출력에 나온 `--suldr-deb` 또는 `--airsane-commit`을
+  제공하고 다시 실행합니다.
+- `BLOCKED_CLIENT_PROOF`: host 준비가 끝났습니다. macOS/Windows 클라이언트에서
+  인쇄와 스캔을 확인합니다.
+- `FAIL`: 원인을 고친 뒤 setup 또는 verify를 다시 실행합니다.
+
+## Host 검증
+
+비파괴 진단 요약:
+
+```bash
+./bin/c48x-airbridge diagnose
+```
+
+구조화된 host verification bundle 생성:
+
+```bash
+./bin/c48x-airbridge verify --live --output ./host-verify.json
+```
+
+host check가 통과하면 `verify`가 macOS와 Windows client handoff를 출력합니다.
+클라이언트 등록은 각 기기에서 직접 해야 하므로 자동화하지 않습니다.
+
+## macOS 클라이언트 설정
+
+### 프린트
+
+1. System Settings를 엽니다.
+2. Printers & Scanners로 이동합니다.
+3. Bonjour shared `Samsung C48x Series @ <host>` 프린터를 추가합니다.
+4. test page나 실제 문서를 출력합니다.
+
+### 스캔
+
+1. Image Capture 또는 Preview를 엽니다.
+2. AirSane/AirScan으로 광고되는 Samsung C48x scanner를 선택합니다.
+3. Preview 또는 Scan을 실행합니다.
+
+macOS는 기본 프린트/스캔 앱을 사용합니다.
+
+## Windows 클라이언트 설정
+
+### 프린트
+
+1. Settings를 엽니다.
+2. Bluetooth & devices, Printers & scanners로 이동합니다.
+3. `Samsung C48x Series @ <host>` 또는 비슷한 host 이름의 네트워크 프린터를
+   추가합니다.
+4. test page를 출력합니다.
+
+### 스캔
+
+NAPS2의 eSCL driver를 사용합니다.
+
+1. NAPS2를 설치합니다.
+2. Profile을 새로 만들거나 수정합니다.
+3. Driver를 `ESCL Driver`로 설정합니다.
+4. Samsung C48x/AirSane scanner를 선택합니다.
+5. 용지 공급, 크기, 해상도, 색상 설정을 고릅니다.
+6. Scan을 실행합니다.
+
+Windows 기본 Scan 앱에서 스캐너가 보이지 않아도 이 구성에서는 이상하지 않습니다.
+스캐너는 Windows PC가 아니라 Linux host에 USB로 연결되어 있습니다.
+
+## 자주 쓰는 명령
 
 ```bash
 ./bin/c48x-airbridge help
-./bin/c48x-airbridge diagnose
-./bin/c48x-airbridge install --dry-run
-```
-
-`install --dry-run`은 실제 설치를 하지 않습니다. 실제 host 변경은 아래 설치
-스크립트를 필요한 단계별로 직접 실행합니다.
-
-## Linux Host 초기 설치
-
-### 1. USB 장치 확인
-
-복합기를 켜고 Linux host에 USB로 연결한 뒤 확인합니다.
-
-```bash
-lsusb | grep -i samsung
-```
-
-Samsung 장치가 보여야 다음 단계로 진행할 수 있습니다.
-
-### 2. CUPS/Avahi 프린트 공유 설치
-
-```bash
-sudo ./scripts/install-cups.sh
-```
-
-이 스크립트는 CUPS와 Avahi를 설치하고 printer sharing만 켭니다. 원격 CUPS
-관리자 기능이나 unrestricted remote access는 켜지 않습니다.
-
-설치 후 CUPS에서 USB 프린터 큐를 추가합니다.
-
-```bash
-lpinfo -v
-lpstat -t
-```
-
-필요하면 브라우저에서 host 로컬로 CUPS 관리 화면을 엽니다.
-
-```text
-http://localhost:631/
-```
-
-Samsung C48x/C480 USB 프린터를 추가한 뒤 test page가 출력되는지 확인합니다.
-
-### 3. SANE/Samsung 스캔 backend 준비
-
-```bash
-sudo ./scripts/install-sane-samsung.sh
-```
-
-이 스크립트는 SANE/USB 관련 패키지와 Samsung USB scanner udev rule을 설치하고,
-`saned` 계정이 scanner/lp 그룹을 사용할 수 있게 보정합니다.
-
-Samsung `smfp` backend가 아직 없으면 신뢰할 수 있는 SULDR/ULD 패키지를 별도로
-설치해야 할 수 있습니다. 로컬 스캔 장치가 잡히는지 세 경로로 확인합니다.
-
-```bash
-scanimage -L
-sudo scanimage -L
-sudo -u saned scanimage -L
-```
-
-AirSane까지 안정적으로 쓰려면 `sudo -u saned scanimage -L`에서도 같은 스캐너가
-보이는 상태가 가장 좋습니다.
-
-### 4. AirSane 설치
-
-AirSane 설치 스크립트는 기본적으로 실제 clone/build/install을 거부합니다. host에
-설치하려면 AirSane upstream commit을 40자 해시로 고정하고 명시적으로 opt-in합니다.
-
-```bash
-sudo AIRSANE_ALLOW_HOST_INSTALL=1 \
-  AIRSANE_COMMIT=<40-character-git-commit> \
-  ./scripts/install-airsane.sh
-```
-
-설치 후 확인합니다.
-
-```bash
-systemctl status airsaned --no-pager
-avahi-browse -rt _uscan._tcp
-curl -f http://localhost:8090/
-```
-
-`_uscan._tcp` 광고가 보이고 `http://localhost:8090/`가 응답하면 LAN 클라이언트가
-eSCL/AirScan 스캐너로 볼 수 있는 상태입니다.
-
-## macOS에서 사용
-
-### 프린트
-
-1. System Settings → Printers & Scanners
-2. Add Printer
-3. Bonjour Shared로 보이는 `Samsung C48x Series @ <host>` 선택
-4. 추가 후 test page 또는 실제 문서 출력
-
-### 스캔
-
-1. Image Capture 또는 Preview 실행
-2. AirSane/AirScan으로 보이는 Samsung C48x 스캐너 선택
-3. Preview 또는 Scan 실행
-
-macOS는 기본 Image Capture/Preview 경로로 인쇄와 스캔이 모두 동작하는 구성이
-검증되어 있습니다.
-
-## Windows에서 사용
-
-### 프린트
-
-1. Settings → Bluetooth & devices → Printers & scanners
-2. Add device
-3. `Samsung C48x Series @ <host>` 또는 host 이름이 붙은 네트워크 프린터 추가
-4. 테스트 페이지 출력
-
-프린트는 Windows 기본 네트워크 프린터 경로로 동작합니다.
-
-### 스캔
-
-Windows 스캔은 NAPS2의 eSCL 경로를 사용합니다.
-
-1. NAPS2 설치
-2. Profiles → New 또는 Edit
-3. Driver를 `ESCL Driver`로 선택
-4. 검색된 Samsung C48x/AirSane 스캐너 선택
-5. 용지 공급, 용지 크기, 해상도, 색상 설정 후 Scan
-
-Windows 기본 스캔 앱에서 장치가 보이지 않는 것은 이 구성에서 이상한 상태가
-아닙니다. 복합기는 Windows PC에 USB로 연결된 것이 아니므로 Samsung Universal Scan
-Driver 같은 로컬 USB 드라이버도 사용 경로가 아닙니다.
-
-## 평소 점검 명령
-
-Linux host에서 프린트 상태:
-
-```bash
-lpstat -t
-lpinfo -v
-avahi-browse -rt _ipp._tcp
-```
-
-Linux host에서 스캔 상태:
-
-```bash
-scanimage -L
-sudo -u saned scanimage -L
-systemctl status airsaned --no-pager
-avahi-browse -rt _uscan._tcp
-curl -f http://localhost:8090/
-```
-
-저장소 CLI의 비파괴 점검:
-
-```bash
-./bin/c48x-airbridge diagnose
+./bin/c48x-airbridge setup --help
+./bin/c48x-airbridge setup --dry-run
+./bin/c48x-airbridge verify --live --output ./host-verify.json
+make check
 ```
 
 ## 문제 해결
 
 ### 클라이언트에서 프린터나 스캐너가 안 보일 때
 
-- 복합기 전원과 USB 연결 확인
-- host와 클라이언트가 같은 LAN에 있는지 확인
-- Avahi 서비스 확인:
+- 복합기 전원과 USB 연결을 확인합니다.
+- host와 클라이언트가 같은 LAN에 있는지 확인합니다.
+- Avahi를 확인합니다.
 
 ```bash
 systemctl status avahi-daemon --no-pager
@@ -207,51 +163,72 @@ avahi-browse -rt _ipp._tcp
 avahi-browse -rt _uscan._tcp
 ```
 
-### Linux host에서는 보이는데 macOS/Windows에서 안 보일 때
+### Host에서는 보이는데 클라이언트에서 안 보일 때
 
-- 방화벽에서 CUPS/IPP와 AirSane/eSCL 접근이 막히지 않았는지 확인
-- `curl http://<host>:8090/eSCL/ScannerStatus`가 클라이언트에서 응답하는지 확인
-- Windows는 기본 스캔 앱 대신 NAPS2 `ESCL Driver` 프로필로 확인
-
-### 스캔이 시작되지 않거나 멈출 때
-
-- 복합기 패널에 오류, 절전, 용지/덮개 상태가 없는지 확인
-- 먼저 Linux host에서 로컬 스캔이 되는지 확인:
+- 방화벽에서 CUPS/IPP와 AirSane/eSCL 접근이 막히지 않았는지 확인합니다.
+- 클라이언트에서 다음 URL이 응답하는지 확인합니다.
 
 ```bash
-scanimage -L
-scanimage --format=png --output-file=/tmp/c48x-test.png
+curl http://<host>:8090/eSCL/ScannerStatus
 ```
 
-- 이후 AirSane 서비스를 재시작:
+- Windows는 NAPS2 `ESCL Driver` profile로 확인합니다.
+
+### `BLOCKED_DRIVER_REQUIRED`
+
+installer가 안전한 scanner backend 또는 pinned AirSane source를 찾지 못했습니다.
+출력에 나온 옵션을 추가해서 다시 실행합니다.
+
+Samsung scanner backend:
 
 ```bash
-sudo systemctl restart airsaned
-systemctl status airsaned --no-pager
+./scripts/bootstrap-setup.sh --yes \
+  --suldr-deb /path/to/suld-driver2.deb \
+  --airsane-commit <40-character-AirSane-commit>
+```
+
+AirSane:
+
+```bash
+./scripts/bootstrap-setup.sh --yes \
+  --airsane-commit <40-character-AirSane-commit>
 ```
 
 ### 인쇄는 되는데 스캔만 안 될 때
 
-프린트와 스캔은 별도 경로입니다. 프린트가 된다고 해서 SANE/AirSane 스캔 경로가
-정상이라는 뜻은 아닙니다.
+프린트와 스캔은 별도 host 경로입니다. 프린트 성공이 SANE/AirSane 성공을 뜻하지는
+않습니다.
 
 ```bash
+scanimage -L
 sudo -u saned scanimage -L
-curl -f http://localhost:8090/
+curl -f http://localhost:8090/eSCL/ScannerStatus
 avahi-browse -rt _uscan._tcp
 ```
 
-세 명령을 먼저 확인하세요.
+### 수동 fallback
+
+아래 스크립트는 guided setup 출력이 특정 component 문제를 알려줬을 때
+troubleshooting이나 targeted repair 용도로만 사용합니다.
+
+```bash
+sudo ./scripts/install-cups.sh
+sudo ./scripts/install-sane-samsung.sh
+sudo AIRSANE_ALLOW_HOST_INSTALL=1 \
+  AIRSANE_COMMIT=<40-character-AirSane-commit> \
+  ./scripts/install-airsane.sh
+```
 
 ## 파일 구성
 
-- `bin/c48x-airbridge`: 운영 CLI entrypoint
+- `bin/c48x-airbridge`: CLI entrypoint
 - `cmd/c48x-airbridge/`: Go CLI main
 - `internal/cli/`: CLI 명령 구현
-- `scripts/install-cups.sh`: CUPS/Avahi 설치와 프린터 공유 설정
-- `scripts/install-sane-samsung.sh`: SANE/Samsung scanner backend 준비
-- `scripts/install-airsane.sh`: AirSane pinned build/install 보조
-- `scripts/diagnose.sh`: host 비파괴 진단
+- `scripts/bootstrap-setup.sh`: one-command host setup entrypoint
+- `scripts/install-cups.sh`: CUPS/Avahi repair helper
+- `scripts/install-sane-samsung.sh`: SANE/Samsung scanner backend repair helper
+- `scripts/install-airsane.sh`: pinned AirSane build/install repair helper
+- `scripts/diagnose.sh`: legacy 비파괴 host 진단
 - `configs/udev/99-samsung-c480-scanner.rules`: Samsung USB scanner 권한 rule
 - `configs/airsane/access.conf.example`: AirSane 접근 제한 예시
-- `testdata/`: CLI 테스트 fixture
+- `testdata/`: CLI test fixture
