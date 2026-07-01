@@ -61,9 +61,7 @@ Samsung scanner backend 때문에 `BLOCKED_DRIVER_REQUIRED`가 나오면, 신뢰
 
 일반 setup은 AirSane source를 floating branch나 tag에서 가져오지 않습니다. 기본
 source는 승인된 upstream tag `v0.4.12`와 commit
-`129cc3bf7258251a0a694dee7741285b59d88f9f`입니다. 고급 사용자는
-`--airsane-commit <40-character-AirSane-commit>`으로 pin을 바꿀 수 있지만,
-branch, tag, `latest` 값은 거부됩니다.
+`129cc3bf7258251a0a694dee7741285b59d88f9f`입니다.
 
 bootstrap script는 Go/build tooling을 확인하고, `sudo go run` 없이 CLI를 빌드한
 뒤 `c48x-airbridge setup`을 실행합니다. Go가 없을 때 dry-run/no-input 모드는

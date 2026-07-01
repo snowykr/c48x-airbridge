@@ -63,9 +63,7 @@ rerun it with a trusted local Samsung/SULDR driver package:
 
 AirSane source is not fetched from a floating branch or tag during normal
 setup. The default source is the approved upstream tag `v0.4.12` pinned to
-commit `129cc3bf7258251a0a694dee7741285b59d88f9f`. Advanced users may override
-that pin with `--airsane-commit <40-character-AirSane-commit>`; branch, tag, and
-`latest` values are rejected.
+commit `129cc3bf7258251a0a694dee7741285b59d88f9f`.
 
 The bootstrap script checks for Go/build tooling, builds the CLI without
 `sudo go run`, and then runs `c48x-airbridge setup`. If Go is missing, dry-run
