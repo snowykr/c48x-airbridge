@@ -135,11 +135,15 @@ func Test_SetupGuidedWorkflow_blocksDriverBeforeMutation_whenScannerBackendHasNo
 		"state: " + setupStateBlockedDriverRequired,
 		blockedDriverRequiredReason,
 		"section: SANE BLOCKED_DRIVER_REQUIRED",
+		"provide a trusted --suldr-deb when the Samsung backend is missing",
 		"evidence bundle: /var/log/c48x-airbridge/setup-evidence.json",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("blocked-driver output missing %q:\n%s", want, got)
 		}
+	}
+	if strings.Contains(got, "provide a trusted --suldr-deb or pinned --airsane-commit") {
+		t.Fatalf("blocked-driver guidance still sends users to AirSane commit override:\n%s", got)
 	}
 	if strings.Contains(got, "sudo lpadmin") || strings.Contains(got, "scanimage -L") {
 		t.Fatalf("blocked-driver guided setup ran mutating or verification commands:\n%s", got)

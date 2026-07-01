@@ -28,7 +28,6 @@ const (
 
 type setupDependencyMetadata struct {
 	AirSaneRepo              string
-	AirSaneApprovedTag       string
 	AirSaneApprovedCommit    string
 	SamsungDriverPackage     string
 	SamsungDriverSHA256      string
@@ -66,7 +65,6 @@ type setupDependencyResolution struct {
 
 var defaultSetupDependencyMetadata = setupDependencyMetadata{
 	AirSaneRepo:           "https://github.com/SimulPiscator/AirSane.git",
-	AirSaneApprovedTag:    "v0.4.12",
 	AirSaneApprovedCommit: "129cc3bf7258251a0a694dee7741285b59d88f9f",
 
 	SamsungDriverProvenance: "Samsung/SULDR driver package is not bundled; explicit local .deb or pinned approved metadata is required.",
@@ -134,9 +132,6 @@ func resolveAirSaneSource(metadata setupDependencyMetadata, commit string) setup
 func normalizeSetupDependencyMetadata(metadata setupDependencyMetadata) setupDependencyMetadata {
 	if metadata.AirSaneRepo == "" {
 		metadata.AirSaneRepo = defaultSetupDependencyMetadata.AirSaneRepo
-	}
-	if metadata.AirSaneApprovedTag == "" {
-		metadata.AirSaneApprovedTag = defaultSetupDependencyMetadata.AirSaneApprovedTag
 	}
 	if metadata.AirSaneApprovedCommit == "" {
 		metadata.AirSaneApprovedCommit = defaultSetupDependencyMetadata.AirSaneApprovedCommit

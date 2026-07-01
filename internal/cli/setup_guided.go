@@ -143,7 +143,7 @@ func guidedBlockedResult(fixture setupRunnerFixture, plan guidedSetupPlan) RunRe
 func guidedRetryGuidance(state string) string {
 	switch state {
 	case setupStateBlockedDriverRequired:
-		return "provide a trusted --suldr-deb or pinned --airsane-commit, then rerun setup --yes --component all"
+		return "provide a trusted --suldr-deb when the Samsung backend is missing, or replace an invalid --airsane-commit with a 40-character commit if AirSane was rejected; then rerun setup --yes --component all"
 	case setupStateBlockedPrinterRequired:
 		return "connect or power on the Samsung C48x/C480 USB printer, then rerun setup --yes --component all"
 	default:
