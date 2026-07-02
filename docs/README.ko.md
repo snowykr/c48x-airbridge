@@ -39,8 +39,8 @@ verify를 다시 실행하세요.
 - Samsung C48x/C480 계열 USB 복합기
 - 같은 LAN에 있는 macOS/Windows 클라이언트
 - Windows 스캔용 NAPS2
-- host에 Samsung `smfp` SANE backend가 없다면 신뢰할 수 있는 Samsung/SULDR
-  scanner backend `.deb`
+- host에 Samsung `smfp` SANE backend가 없다면 신뢰할 수 있고 이미 로컬에 있는
+  Samsung/SULDR scanner backend `.deb`
 - AirSane build는 기본으로 프로젝트가 승인한 upstream pin을 사용합니다:
   `SimulPiscator/AirSane` tag `v0.4.12`, commit
   `129cc3bf7258251a0a694dee7741285b59d88f9f`
@@ -93,9 +93,9 @@ test -e /usr/lib/sane/libsane-smfp.so.1 || \
   ls /usr/lib/*/sane/libsane-smfp.so.1
 ```
 
-자동 setup에서 `--suldr-deb`에 넘길 수 있는 것은 로컬 `.deb` 파일입니다.
-`.tar.gz` installer는 직접 넘길 수 없습니다. 파일은 예를 들어 아래 위치에 두면
-찾기 쉽습니다.
+자동 setup에서 `--suldr-deb`에 넘길 수 있는 것은 실제로 존재하는 일반 로컬
+`.deb` 파일입니다. `.tar.gz` installer나 download URL은 직접 넘길 수 없습니다.
+파일은 예를 들어 아래 위치에 두면 찾기 쉽습니다.
 
 ```bash
 mkdir -p ~/Downloads/c48x-drivers
@@ -104,11 +104,13 @@ mkdir -p ~/Downloads/c48x-drivers
   --suldr-deb "$HOME/Downloads/c48x-drivers/suld-driver2-1.00.39.deb"
 ```
 
-찾아볼 위치:
+직접 열어 확인하고 내려받을 수 있는 source page:
 
-- HP Samsung Xpress SL-C480 series support:
+- HP Samsung Xpress SL-C480 series support. 명령줄 도구는 HTTP 403을 받을 수
+  있으므로 일반 browser 접속이 필요할 수 있습니다:
   <https://support.hp.com/us-en/drivers/samsung-xpress-sl-c480-color-laser-multifunction-printer-series/16462546>
-- SULDR repository와 Samsung installer notes:
+- SULDR repository와 Samsung installer notes. 사용자가 직접 확인하고 받을 수
+  있는 일반 공개 source page입니다:
   <https://www.bchemnet.com/suldr/>,
   <https://www.bchemnet.com/suldr/suld.html>
 
@@ -121,7 +123,9 @@ HP 쪽에서는 Samsung Unified Linux Driver `uld_*.tar.gz`만 제공될 수 있
 host에 설치된 `smfp` SANE backend로 표현됩니다. 프로젝트는
 `libsane-smfp.so.1` 파일과 `/etc/sane.d/dll.conf`의 `smfp` 항목을 확인합니다.
 Linux host에 별도의 Windows용 Samsung scan application이 필요한 것은 아닙니다.
-HP에서 받은 파일이 `uld_*.tar.gz`뿐이라면, 아래처럼 수동 preinstall로 처리합니다.
+즉, 이 프로젝트는 이미 설치된 `smfp` backend나 사용자가 직접 준비한 명시적
+로컬 `.deb` 경로만 사용합니다. HP에서 받은 파일이 `uld_*.tar.gz`뿐이라면,
+아래처럼 수동 preinstall로 처리합니다.
 
 ```bash
 mkdir -p ~/Downloads/c48x-drivers
@@ -272,10 +276,10 @@ Samsung scanner backend:
 
 HP/Samsung `uld_*.tar.gz`만 찾은 경우에는 `--suldr-deb`에 넘기지 마세요. 먼저
 수동 설치 후 `libsane-smfp.so.1`이 생겼는지 확인하고 `--suldr-deb` 없이 다시
-실행하거나, 신뢰할 수 있는 SULDR `.deb` package를 사용하세요.
-이 경로가 이번에 검증된 host setup의 driver-set 경로입니다. ULD가 `smfp`를
-설치한 뒤에는 `c48x-airbridge setup`이 이를 이미 설치된 Samsung scanner
-backend로 처리합니다.
+실행하거나, 사용자가 직접 준비한 신뢰할 수 있는 로컬 SULDR `.deb` package를
+사용하세요. 이 경로가 이번에 검증된 host setup의 driver-set 경로입니다. ULD가
+`smfp`를 설치한 뒤에는 `c48x-airbridge setup`이 이를 이미 설치된 Samsung
+scanner backend로 처리합니다.
 
 AirSane 고급 override:
 

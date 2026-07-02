@@ -102,6 +102,52 @@ func Test_SetupDryRun_printsReviewedPlanWithoutMutation_whenRequested(t *testing
 	}
 }
 
+func Test_SetupDryRun_rejectsMissingSULDRDeb_beforeResolverPass(t *testing.T) {
+	// Given
+	out := new(bytes.Buffer)
+	errOut := new(bytes.Buffer)
+	cmd := NewCommand(Streams{Out: out, Err: errOut})
+	cmd.SetArgs([]string{"setup", "--dry-run", "--suldr-deb", "/tmp/not-a-driver.deb"})
+
+	// When
+	err := cmd.ExecuteContext(context.Background())
+
+	// Then
+	if err == nil {
+		t.Fatal("setup accepted missing SULDR .deb")
+	}
+	if !strings.Contains(err.Error(), "--suldr-deb") || !strings.Contains(err.Error(), "existing local .deb file") {
+		t.Fatalf("setup SULDR .deb error did not name existing local .deb requirement: %v", err)
+	}
+	if strings.Contains(out.String(), "dependency resolver state: PASS") {
+		t.Fatalf("setup dry-run printed resolver PASS after invalid SULDR .deb:\n%s", out.String())
+	}
+}
+
+func Test_SetupDryRun_acceptsExistingSULDRDeb_whenProvided(t *testing.T) {
+	// Given
+	out := new(bytes.Buffer)
+	errOut := new(bytes.Buffer)
+	deb := filepath.Join(t.TempDir(), "suld-driver2-1.00.39.deb")
+	if err := os.WriteFile(deb, []byte("trusted local test package"), 0o644); err != nil {
+		t.Fatalf("write SULDR .deb fixture: %v", err)
+	}
+	cmd := NewCommand(Streams{Out: out, Err: errOut})
+	cmd.SetArgs([]string{"setup", "--dry-run", "--suldr-deb", deb})
+
+	// When
+	err := cmd.ExecuteContext(context.Background())
+
+	// Then
+	if err != nil {
+		t.Fatalf("setup rejected existing SULDR .deb: %v", err)
+	}
+	got := out.String()
+	if !strings.Contains(got, "dependency resolver state: PASS") || !strings.Contains(got, "Samsung backend source: local-deb") {
+		t.Fatalf("setup dry-run did not accept existing local SULDR .deb:\n%s", got)
+	}
+}
+
 func Test_SetupNoInput_rejectsPromptRequiredFlow_whenReviewRequired(t *testing.T) {
 	// Given
 	out := new(bytes.Buffer)

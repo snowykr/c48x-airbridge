@@ -12,6 +12,7 @@ coverage.out
 coverage.html
 
 # Local build and packaging directories
+/.cache/
 /build/
 /dist/
 /tmp/

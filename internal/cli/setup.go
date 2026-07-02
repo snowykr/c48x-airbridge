@@ -93,12 +93,32 @@ func parseSetupOptions(options setupOptions, component string) (setupOptions, er
 		return setupOptions{}, err
 	}
 	options.Component = parsedComponent
+	if err := validateSULDRDeb(options.SULDRDeb); err != nil {
+		return setupOptions{}, err
+	}
 	if options.FakeRunner != "" {
 		if err := validateFakeRunner(options.FakeRunner); err != nil {
 			return setupOptions{}, err
 		}
 	}
 	return options, nil
+}
+
+func validateSULDRDeb(path string) error {
+	if path == "" {
+		return nil
+	}
+	if filepath.Ext(path) != ".deb" {
+		return fmt.Errorf("--suldr-deb must point to an existing local .deb file: %s", path)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("--suldr-deb must point to an existing local .deb file: %s", path)
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("--suldr-deb must point to an existing local .deb file: %s", path)
+	}
+	return nil
 }
 
 func newSetupComponent(value string) (setupComponent, error) {

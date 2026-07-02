@@ -9,6 +9,7 @@ APT_INSTALL_GO_CMD="sudo apt-get update && sudo apt-get install -y golang-go bui
 DRY_RUN=0
 YES=0
 NO_INPUT=0
+HELP=0
 SETUP_ARGS=()
 
 log() {
@@ -92,6 +93,7 @@ parse_args() {
         SETUP_ARGS+=("$1")
         ;;
       --help|-h)
+        HELP=1
         SETUP_ARGS+=("$1")
         ;;
       --)
@@ -105,6 +107,35 @@ parse_args() {
     esac
     shift
   done
+}
+
+print_setup_help() {
+  cat <<'HELP'
+Guide Linux host setup for the Samsung C48x bridge.
+
+The setup command uses line-based prompts, supports non-interactive review with
+--dry-run, and keeps a review/apply boundary before any privileged host action.
+After approval it runs the guided Linux host setup workflow.
+
+AirSane builds use the project-approved upstream pin by default. Use
+--airsane-commit only for an advanced 40-character commit override; branch,
+tag, and latest source names are rejected.
+
+Completion states: PASS, BLOCKED_PRINTER_REQUIRED, BLOCKED_DRIVER_REQUIRED, BLOCKED_CLIENT_PROOF, FAIL.
+
+Usage:
+  c48x-airbridge setup [flags]
+
+Flags:
+      --airsane-commit string   advanced override: 40-character AirSane git commit; default uses the approved project pin
+      --component string        setup component: all, cups, scanner, airsane, or verify (default "all")
+      --dry-run                 print the reviewed setup plan without mutating the host
+      --force                   allow rebuilding or repairing setup steps that already appear present
+  -h, --help                    help for setup
+      --no-input                fail instead of prompting for setup decisions
+      --suldr-deb string        path to a locally provided Samsung/SULDR driver .deb
+      --yes                     approve the reviewed setup plan without prompting
+HELP
 }
 
 build_cli() {
@@ -143,6 +174,11 @@ run_setup() {
 main() {
   [[ -n "${BASH_VERSION:-}" ]] || fail "bash is required"
   parse_args "$@"
+
+  if [[ "${HELP}" -eq 1 ]]; then
+    print_setup_help
+    return 0
+  fi
 
   if ! has_cmd go && [[ "${DRY_RUN}" -eq 0 ]]; then
     install_go
