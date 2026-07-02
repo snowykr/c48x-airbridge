@@ -162,7 +162,7 @@ func clientHandoffForResult(result verifyResult) []string {
 		"- Open Image Capture and scan with Image Capture from the advertised AirSane/eSCL scanner; save the scan proof for the evidence bundle.",
 		"Windows client handoff:",
 		"- Add the Samsung C48x IPP printer from Settings > Bluetooth & devices > Printers & scanners; use the discovered IPP printer and print a test page.",
-		"- Install or open a non-Samsung client such as Windows Scan or NAPS2, then scan with a Windows eSCL-compatible app and save a scan proof.",
+		"- Install or open NAPS2, create a profile with the ESCL Driver, scan through the advertised AirSane/eSCL scanner, and save a scan proof.",
 	}
 }
 

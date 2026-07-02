@@ -17,6 +17,25 @@ is for scanners connected directly to the Windows PC over USB.
 
 Korean documentation is available at [docs/README.ko.md](docs/README.ko.md).
 
+## Verified Behavior
+
+The current working topology was proven during the Codex setup session on a
+Linux host named `snowyserver-n100`. That proof session started before this
+repository was renamed from `local-printer-scanner` to `c48x-airbridge`, so old
+session transcripts may contain both project names:
+
+- Host-side CUPS, Avahi, SANE `smfp`, AirSane, IPP mDNS, and eSCL mDNS checks
+  were observed working when the Samsung C48x/C480 was connected and powered.
+- Windows printing worked through the network printer.
+- Windows scanning worked through NAPS2 with the `ESCL Driver` over host
+  AirSane/eSCL. Windows built-in Scan discovery was not the proven path.
+- macOS printing and scanning were both manually confirmed through the native
+  macOS printer and scanner clients.
+
+If `verify --live` later reports `BLOCKED_PRINTER_REQUIRED`, that only means
+the host cannot currently see the USB device. Power on or reconnect the printer
+before rerunning setup or verification.
+
 ## Requirements
 
 - Ubuntu or Debian-based Linux host with `sudo`
@@ -28,6 +47,12 @@ Korean documentation is available at [docs/README.ko.md](docs/README.ko.md).
 - AirSane builds use the project-approved upstream pin by default:
   `SimulPiscator/AirSane` tag `v0.4.12`, commit
   `129cc3bf7258251a0a694dee7741285b59d88f9f`
+
+The Samsung/SULDR backend is the only external scanner driver artifact that may
+require user action. It provides the `smfp` SANE backend, usually visible as
+`/usr/lib/sane/libsane-smfp.so.1` or `/usr/lib/*/sane/libsane-smfp.so.1`. This
+project does not redistribute HP/Samsung proprietary driver binaries and does
+not silently download them.
 
 If the printer is powered off or the USB cable is disconnected, services may be
 running but print and scan jobs can still fail. Check power and USB first.
@@ -59,6 +84,60 @@ rerun it with a trusted local Samsung/SULDR driver package:
 ```bash
 ./scripts/bootstrap-setup.sh --yes \
   --suldr-deb /path/to/suld-driver2.deb
+```
+
+### Finding The Samsung Scanner Driver File
+
+You only need this section when the host does not already have the Samsung
+`smfp` SANE backend. Check first:
+
+```bash
+test -e /usr/lib/sane/libsane-smfp.so.1 || \
+  ls /usr/lib/*/sane/libsane-smfp.so.1
+```
+
+For automated setup, `--suldr-deb` must point to a local `.deb` file, not a
+`.tar.gz` installer. A practical place to keep the file is:
+
+```bash
+mkdir -p ~/Downloads/c48x-drivers
+# put suld-driver2-*.deb here, then pass the real path:
+./scripts/bootstrap-setup.sh --yes \
+  --suldr-deb "$HOME/Downloads/c48x-drivers/suld-driver2-1.00.39.deb"
+```
+
+Known places to look:
+
+- HP support for the Samsung Xpress SL-C480 series:
+  <https://support.hp.com/us-en/drivers/samsung-xpress-sl-c480-color-laser-multifunction-printer-series/16462546>
+- SULDR repository overview and Samsung installer notes:
+  <https://www.bchemnet.com/suldr/> and
+  <https://www.bchemnet.com/suldr/suld.html>
+
+HP may provide a Samsung Unified Linux Driver `uld_*.tar.gz` instead of a `.deb`.
+The CLI does not install that archive directly. Either install that ULD package
+manually so `smfp` is present before rerunning setup, or provide a trusted
+SULDR-packaged `suld-driver2-*.deb` to `--suldr-deb`.
+
+In the working host setup, this HP/Samsung driver-set path is represented by the
+installed `smfp` SANE backend. The project checks for `libsane-smfp.so.1` and a
+single `smfp` entry in `/etc/sane.d/dll.conf`; it does not need a separate
+Windows-style Samsung scan application on the Linux host. If the HP download is
+the only artifact you have, use it as a manual preinstall step:
+
+```bash
+mkdir -p ~/Downloads/c48x-drivers
+cd ~/Downloads/c48x-drivers
+# place the HP/Samsung uld_*.tar.gz here
+tar -xzf uld_*.tar.gz
+cd uld
+sudo ./install.sh
+
+# confirm the backend exists, then return to c48x-airbridge
+test -e /usr/lib/sane/libsane-smfp.so.1 || \
+  ls /usr/lib/*/sane/libsane-smfp.so.1
+cd /path/to/c48x-airbridge
+./scripts/bootstrap-setup.sh --yes
 ```
 
 AirSane source is not fetched from a floating branch or tag during normal
@@ -194,6 +273,13 @@ For the Samsung scanner backend:
 ./scripts/bootstrap-setup.sh --yes \
   --suldr-deb /path/to/suld-driver2.deb
 ```
+
+If you only found an HP/Samsung `uld_*.tar.gz`, do not pass it to
+`--suldr-deb`. Install it manually first, confirm `libsane-smfp.so.1` exists,
+then rerun setup without `--suldr-deb`; or use a trusted SULDR `.deb` package.
+That is the same driver-set path used by the verified host setup: once ULD has
+installed `smfp`, `c48x-airbridge setup` treats it as an already-installed
+Samsung scanner backend.
 
 For AirSane advanced override:
 

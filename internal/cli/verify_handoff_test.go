@@ -35,11 +35,15 @@ func Test_VerifyLive_writesEvidenceAndPrintsClientHandoff_whenHostIsReady(t *tes
 		"Windows client handoff:",
 		"Add the Samsung C48x IPP printer",
 		"scan with Image Capture",
-		"scan with a Windows eSCL-compatible app",
+		"NAPS2",
+		"ESCL Driver",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("verify live output missing %q:\n%s", want, got)
 		}
+	}
+	if strings.Contains(got, "Windows Scan") {
+		t.Fatalf("verify live output should not present Windows Scan as the proven scanner path:\n%s", got)
 	}
 	bundle := readVerifyOutput(t, output)
 	for _, want := range []string{

@@ -97,6 +97,19 @@ unpinned third-party packages. It must resolve in this order:
 4. Return `BLOCKED_DRIVER_REQUIRED` with exact remediation when no safe source
    is available.
 
+The current implementation has no bundled or repo-pinned Samsung driver package
+metadata. Fresh hosts without `smfp` must either receive an explicit trusted
+local `suld-driver2-*.deb` path or have a Samsung/HP ULD installer applied
+manually before setup is rerun. HP/Samsung `uld_*.tar.gz` archives are not valid
+`--suldr-deb` inputs unless they have first been converted or repackaged into a
+trusted `.deb` outside this tool.
+
+The verified HP/Samsung ULD path is therefore an already-installed backend path:
+after the user runs the ULD installer outside this tool, setup verifies
+`libsane-smfp.so.1` and the `smfp` SANE backend entry. The tool must not treat
+the tarball itself as a package-manager input or silently run an arbitrary
+downloaded installer.
+
 The blocked state is a host setup result, not a successful scanner setup.
 
 ## AirSane Source Build And Service
