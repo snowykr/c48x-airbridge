@@ -33,6 +33,21 @@ PC에 USB로 직접 연결된 스캐너용입니다.
 복합기를 보지 못한다는 뜻입니다. 복합기 전원과 USB 연결을 확인한 뒤 setup 또는
 verify를 다시 실행하세요.
 
+### 전원 재투입 후 스캐너 자동 복구
+
+- AirSane은 의도적으로 `--hotplug=false`로 실행됩니다. Samsung `smfp` backend는
+  디바이스를 열 때 USB 리셋을 보내는데, 이것이 AirSane의 libusb hotplug 모니터와
+  경합해 `airsaned`를 `SIGSEGV`로 크래시시키기 때문입니다. `smfp` backend에서는
+  `--hotplug=true`를 켜지 마세요.
+- 대신 설치된 udev rule이 C480이 USB에 다시 나타날 때마다 `airsaned`를
+  재시작합니다. 프린터 전원을 껐다 켜도 수동 재시작 없이 스캔이 복구됩니다.
+- C480은 `smfp` backend가 리셋을 보낼 때 USB configuration을 버립니다. 스캔에는
+  영향이 없고, 프린터가 절전에서 깨어나면 커널이 디바이스를 다시 프로브합니다.
+- 절전 중인 C480은 `set config`를 무시하지만 USB 리셋에는 반응해 깨어납니다.
+  프린트 요청은 프린터 매뉴얼대로 기기를 깨우며, 절전 중 첫 스캔은 실패할 수
+  있고 재시도하면 성공합니다. USB로 항상 접근 가능하게 하려면 프린터 패널에서
+  `Auto Power Off`를 꺼두세요.
+
 ## 준비물
 
 - `sudo`를 사용할 수 있는 Ubuntu/Debian 계열 Linux host
@@ -326,6 +341,6 @@ sudo AIRSANE_ALLOW_HOST_INSTALL=1 \
 - `scripts/install-sane-samsung.sh`: SANE/Samsung scanner backend repair helper
 - `scripts/install-airsane.sh`: pinned AirSane build/install repair helper
 - `scripts/diagnose.sh`: legacy 비파괴 host 진단
-- `configs/udev/99-samsung-c480-scanner.rules`: Samsung USB scanner 권한 rule
+- `configs/udev/99-samsung-c480-scanner.rules`: Samsung USB scanner 권한 및 AirSane 재시작 rule
 - `configs/airsane/access.conf.example`: AirSane 접근 제한 예시
 - `testdata/`: CLI test fixture

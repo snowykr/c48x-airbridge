@@ -3,3 +3,9 @@
 # The product wildcard below is the documented v1 exception because C480/C480W/C48x
 # variants can report different product ids under Samsung vendor 04e8.
 ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="04e8", ENV{libsane_matched}="yes", GROUP="scanner", MODE="0664"
+
+# AirSane enumerates scanners only at startup; --hotplug stays disabled because
+# the smfp backend's open-time USB reset races AirSane's libusb hotplug monitor
+# and crashes airsaned with SIGSEGV. Restart AirSane when the C480 appears so
+# scanning recovers automatically after power-off/on or replug.
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="04e8", ATTR{idProduct}=="347e", RUN+="/usr/bin/systemctl --no-block restart airsaned"

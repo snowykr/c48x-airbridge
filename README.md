@@ -36,6 +36,23 @@ If `verify --live` later reports `BLOCKED_PRINTER_REQUIRED`, that only means
 the host cannot currently see the USB device. Power on or reconnect the printer
 before rerunning setup or verification.
 
+### Scanner recovery after power cycles
+
+- AirSane runs with `--hotplug=false` on purpose: the Samsung `smfp` backend
+  resets the USB device when it opens it, which races AirSane's libusb hotplug
+  monitor and crashes `airsaned` with `SIGSEGV`. Do not enable `--hotplug=true`
+  for the `smfp` backend.
+- Instead, the installed udev rule restarts `airsaned` whenever the C480
+  re-appears on USB, so powering the printer off and on recovers scanning
+  without a manual service restart.
+- The C480 drops its USB configuration when the `smfp` backend resets it. This
+  does not break scanning, and the kernel re-probes the device after the
+  printer wakes from power save.
+- A sleeping C480 ignores `set config` but wakes on a USB reset. Print requests
+  wake the machine per the printer manual; a scan while asleep may fail on the
+  first attempt and succeed on retry. Disable `Auto Power Off` on the printer
+  if you want it reachable at all times over USB.
+
 ## Requirements
 
 - Ubuntu or Debian-based Linux host with `sudo`
@@ -332,7 +349,7 @@ sudo AIRSANE_ALLOW_HOST_INSTALL=1 \
 - `scripts/install-sane-samsung.sh`: SANE/Samsung scanner backend repair helper
 - `scripts/install-airsane.sh`: pinned AirSane build/install repair helper
 - `scripts/diagnose.sh`: legacy non-mutating host diagnostics
-- `configs/udev/99-samsung-c480-scanner.rules`: Samsung USB scanner permission rule
+- `configs/udev/99-samsung-c480-scanner.rules`: Samsung USB scanner permission and AirSane restart rule
 - `configs/airsane/access.conf.example`: AirSane access control example
 - `docs/README.ko.md`: Korean README
 - `testdata/`: CLI test fixtures
